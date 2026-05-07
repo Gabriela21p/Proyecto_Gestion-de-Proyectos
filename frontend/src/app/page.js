@@ -1,17 +1,26 @@
-// Este código se ejecuta en el servidor de Next.js
-async function getData() {
-  const res = await fetch('http://localhost:5000/api/data', { cache: 'no-store' });
-  if (!res.ok) throw new Error('Falló la carga de datos');
-  return res.json();
-}
+'use client';
 
-export default async function Page() {
-  const data = await getData();
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/AuthContext';
+
+export default function Page() {
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        router.push('/app');
+      } else {
+        router.push('/login');
+      }
+    }
+  }, [user, loading, router]);
 
   return (
-    <main style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>Proyecto Flask + Next.js</h1>
-      <p>Mensaje desde el backend: <strong>{data.mensaje}</strong></p>
+    <main style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <p>Redirigiendo...</p>
     </main>
   );
 }
