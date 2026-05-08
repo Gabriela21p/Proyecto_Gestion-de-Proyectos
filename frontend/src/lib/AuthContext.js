@@ -10,20 +10,24 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Inicializar sesión desde localStorage
   useEffect(() => {
+    let isMounted = true;
+
     async function initSession() {
       const { token: savedToken, user: savedUser } = getSession();
       if (savedToken && savedUser) {
+        if (!isMounted) return;
         setToken(savedToken);
         setUser(savedUser);
-        // Verificar que el token siga siendo válido antes de exponer la app.
         await verifyToken(savedToken);
       }
-      setLoading(false);
+      if (isMounted) setLoading(false);
     }
 
     initSession();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const verifyToken = async (tokenToVerify) => {
@@ -36,8 +40,7 @@ export function AuthProvider({ children }) {
         setUser(null);
         setToken(null);
       }
-    } catch (error) {
-      console.error('Error verificando token:', error);
+    } catch {
       clearSession();
       setUser(null);
       setToken(null);

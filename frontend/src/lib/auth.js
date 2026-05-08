@@ -1,6 +1,7 @@
-// Usar rutas relativas para que Next.js las reenrute correctamente
 const API_BASE = '/api';
 const TOKEN_COOKIE_NAME = 'rolling_token';
+const TOKEN_STORAGE_KEY = 'rolling_token';
+const USER_STORAGE_KEY = 'rolling_user';
 
 function setSessionCookie(token) {
   if (typeof document === 'undefined') return;
@@ -70,24 +71,31 @@ export async function getCurrentUser(token) {
 }
 
 export function saveSession(token, user) {
-  localStorage.setItem('rolling_token', token);
-  localStorage.setItem('rolling_user', JSON.stringify(user));
+  localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
   setSessionCookie(token);
 }
 
 export function getSession() {
   if (typeof window === 'undefined') return { token: null, user: null };
 
-  const token = localStorage.getItem('rolling_token');
-  const userStr = localStorage.getItem('rolling_user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+  const userStr = localStorage.getItem(USER_STORAGE_KEY);
+  let user = null;
+  try {
+    user = userStr ? JSON.parse(userStr) : null;
+  } catch {
+    clearSession();
+    return { token: null, user: null };
+  }
+
   if (token) setSessionCookie(token);
 
   return { token, user };
 }
 
 export function clearSession() {
-  localStorage.removeItem('rolling_token');
-  localStorage.removeItem('rolling_user');
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  localStorage.removeItem(USER_STORAGE_KEY);
   clearSessionCookie();
 }

@@ -14,10 +14,10 @@ const defaultStats = {
 
 const defaultArchitecture = [
   { title: 'Cliente', tone: 'purple', items: [['React Native', 'iOS + Android'], ['Next.js web', 'PWA + SEO'], ['MapLibre GL JS', 'Mapas interactivos']] },
-  { title: 'Backend / API', tone: 'green', items: [['Flask API actual', 'REST para MVP'], ['Socket.io futuro', 'Feed y notifs'], ['Redis futuro', 'Cache + sesiones']] },
-  { title: 'Capa de datos', tone: 'blue', items: [['SQLite actual', 'MVP local'], ['PostgreSQL + PostGIS', 'Geo + relacional'], ['Meilisearch futuro', 'Busqueda por nombre/tipo']] },
-  { title: 'Mapas y geolocalizacion', tone: 'amber', items: [['OpenStreetMap + Tiles', 'Mapas open source'], ['Overpass API futuro', 'Datos OSM'], ['Nominatim / Pelias', 'Geocodificacion']] },
-  { title: 'Infraestructura y servicios', tone: 'red', items: [['Auth futuro', 'Login social / OTP'], ['Cloudflare R2', 'Fotos y medios'], ['Expo EAS / Vercel', 'Deploy y CI/CD']] },
+  { title: 'Backend / API', tone: 'green', items: [['Node.js + Fastify', 'API REST + GraphQL'], ['Socket.io', 'Feed y notifs'], ['Redis + BullMQ', 'Cache + jobs']] },
+  { title: 'Capa de datos', tone: 'blue', items: [['PostgreSQL + PostGIS', 'Geo + relacional'], ['MongoDB', 'Posts, reviews, feed'], ['Meilisearch', 'Busqueda por nombre/tipo']] },
+  { title: 'Mapas y geolocalizacion', tone: 'amber', items: [['OpenStreetMap + Tiles', 'Mapas open source'], ['Overpass API', 'Datos OSM'], ['Nominatim / Pelias', 'Geocodificacion']] },
+  { title: 'Infraestructura y servicios', tone: 'red', items: [['Supabase Auth', 'Login social / OTP'], ['Cloudflare R2', 'Fotos y medios'], ['Expo EAS / Vercel', 'Deploy y CI/CD']] },
 ];
 
 const initialFilters = {

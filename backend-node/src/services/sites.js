@@ -82,7 +82,6 @@ export async function listSites(filters = {}) {
 }
 
 export async function getSite(id) {
-  const sites = await listSites({ limit: 1, id });
   const result = await query(
     `
       SELECT
@@ -132,11 +131,6 @@ export async function getSite(id) {
     reviews: reviews.rows.map(toReviewDto),
     events: events.rows.map(toEventDto)
   };
-}
-
-export async function createReview({ siteId, username, rating, title, body, verified = false }) {
-  const user = await getOrCreateUser(username || 'vecino_rolling');
-  return createReviewForUser({ siteId, user, rating, title, body, verified });
 }
 
 export async function createReviewForUser({ siteId, user, rating, title, body, verified = false }) {
@@ -211,22 +205,6 @@ export async function reindexAllSites() {
     review_count: site.total_reviews,
     active_event_count: site.active_events_count
   })));
-}
-
-export async function getOrCreateUser(username) {
-  const normalized = slugify(username).replaceAll('-', '_').slice(0, 40) || 'vecino_rolling';
-  const existing = await query('SELECT * FROM users WHERE username = $1', [normalized]);
-  if (existing.rowCount) return existing.rows[0];
-
-  const inserted = await query(
-    `
-      INSERT INTO users(username, email, reputation, identity_level, review_weight)
-      VALUES($1, $2, 5, 'guest', 1)
-      RETURNING *
-    `,
-    [normalized, `${normalized}@rolling.local`]
-  );
-  return inserted.rows[0];
 }
 
 export function calculateReviewWeight(user, verifiedVisit = false) {
