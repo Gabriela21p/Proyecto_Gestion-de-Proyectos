@@ -6,6 +6,7 @@ export async function geocode(query) {
   url.searchParams.set('q', query);
   url.searchParams.set('format', 'jsonv2');
   url.searchParams.set('limit', '8');
+  url.searchParams.set('addressdetails', '1');
 
   const response = await request(url, {
     headers: { 'user-agent': 'Rolling MVP local development' }

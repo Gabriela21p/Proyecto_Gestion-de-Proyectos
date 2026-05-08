@@ -230,14 +230,15 @@ async function seedLoginUser() {
 
   await query(
     `
-      INSERT INTO users(username, email, password_hash, auth_provider, email_verified, identity_level, reputation, review_weight)
-      VALUES($1, $2, $3, 'local', true, 'registered', 20, 1.6)
+      INSERT INTO users(username, email, password_hash, auth_provider, email_verified, identity_level, role, reputation, review_weight)
+      VALUES($1, $2, $3, 'local', true, 'registered', 'admin', 20, 1.6)
       ON CONFLICT(email) DO UPDATE SET
         username = EXCLUDED.username,
         password_hash = EXCLUDED.password_hash,
         auth_provider = EXCLUDED.auth_provider,
         email_verified = EXCLUDED.email_verified,
         identity_level = EXCLUDED.identity_level,
+        role = EXCLUDED.role,
         reputation = EXCLUDED.reputation,
         review_weight = EXCLUDED.review_weight,
         updated_at = now()

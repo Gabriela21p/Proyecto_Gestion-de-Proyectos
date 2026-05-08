@@ -122,6 +122,13 @@ Email: dev1@careculosltda.com
 Password: careculos
 ```
 
+Usuario admin sembrado automaticamente para moderacion:
+
+```text
+Email: demo@rolling.local
+Password: Demo12345*
+```
+
 Las reviews autenticadas se calculan con `weight`.
 
 Factores actuales:
@@ -138,6 +145,57 @@ El rating de cada sitio usa promedio ponderado:
 ```text
 SUM(rating * weight) / SUM(weight)
 ```
+
+## Registro y moderacion de nuevos sitios
+
+Flujo funcional:
+
+```text
+Usuario sugiere sitio -> API geocodifica con Nominatim -> PostGIS detecta duplicados cercanos -> queda pending -> admin aprueba -> se crea site -> Meilisearch reindexa -> Socket.io notifica
+```
+
+Endpoints:
+
+```text
+POST /api/site-suggestions/preview
+POST /api/site-suggestions
+GET  /api/site-suggestions?status=pending
+POST /api/site-suggestions/:id/approve
+POST /api/site-suggestions/:id/reject
+```
+
+La web incluye `/app/admin` para usuarios con rol `admin` o `moderator`. Desde ahi se aprueban o rechazan sugerencias. Al aprobar, el backend crea el sitio real en `sites` con coordenadas PostGIS y lo deja listo para aparecer en el mapa.
+
+## Reporteria y dashboard admin
+
+La vista `/app/admin` incluye un dashboard filtrable para operar el MVP con datos reales del backend.
+
+Filtros disponibles:
+
+- Rango de fechas.
+- Localidad.
+- Ciudad.
+- Categoria.
+
+Metricas incluidas:
+
+- Usuarios, sitios, reviews, feed posts, reportes abiertos y sugerencias pendientes.
+- Actividad mensual por usuarios, sitios, reviews, sugerencias y reportes.
+- Distribucion de roles.
+- Embudo de sugerencias por estado.
+- Localidades y categorias con mas sitios aprobados.
+- Rating y confianza promedio.
+- Graficas de estado de servicios y consumo runtime del API.
+
+Endpoint base:
+
+```text
+GET /api/admin/dashboard?from=2026-01-01&to=2026-12-31&localidad=Chapinero&categoria=Cafe
+```
+
+El panel permite exportar el reporte filtrado en JSON para auditoria, analisis externo o carga posterior a herramientas BI.
+
+La vista de usuarios permite filtrar por busqueda libre, rol, email verificado y nivel de identidad antes de cambiar permisos.
 
 ## Ingesta de datos reales
 

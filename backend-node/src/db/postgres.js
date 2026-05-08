@@ -165,10 +165,20 @@ export async function initPostgres() {
       lat DOUBLE PRECISION,
       lng DOUBLE PRECISION,
       status TEXT NOT NULL DEFAULT 'pending',
+      duplicate_site_id UUID REFERENCES sites(id) ON DELETE SET NULL,
+      approved_site_id UUID REFERENCES sites(id) ON DELETE SET NULL,
+      reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      reviewed_at TIMESTAMPTZ,
+      rejection_reason TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
   await ensureColumn('site_suggestions', 'user_id', 'UUID REFERENCES users(id) ON DELETE SET NULL');
+  await ensureColumn('site_suggestions', 'duplicate_site_id', 'UUID REFERENCES sites(id) ON DELETE SET NULL');
+  await ensureColumn('site_suggestions', 'approved_site_id', 'UUID REFERENCES sites(id) ON DELETE SET NULL');
+  await ensureColumn('site_suggestions', 'reviewed_by', 'UUID REFERENCES users(id) ON DELETE SET NULL');
+  await ensureColumn('site_suggestions', 'reviewed_at', 'TIMESTAMPTZ');
+  await ensureColumn('site_suggestions', 'rejection_reason', 'TEXT');
 
   await query('CREATE INDEX IF NOT EXISTS idx_sites_location ON sites USING GIST(location)');
   await query('CREATE INDEX IF NOT EXISTS idx_sites_status_score ON sites(status, trust_score DESC, rating_average DESC)');
@@ -176,6 +186,7 @@ export async function initPostgres() {
   await query('CREATE INDEX IF NOT EXISTS idx_reviews_site_status ON reviews(site_id, status, created_at DESC)');
   await query('CREATE INDEX IF NOT EXISTS idx_events_dates ON events(status, starts_on, ends_on)');
   await query('CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status, created_at DESC)');
+  await query('CREATE INDEX IF NOT EXISTS idx_site_suggestions_status ON site_suggestions(status, created_at DESC)');
 }
 
 async function ensureColumn(table, column, definition) {

@@ -68,10 +68,14 @@ export async function requireUser(request, reply) {
   return user;
 }
 
-export async function optionalUser(request) {
-  const header = request.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
-  return verifyToken(token);
+export async function requireRole(request, reply, roles = []) {
+  const user = await requireUser(request, reply);
+  if (!user) return null;
+  if (!roles.includes(user.role)) {
+    reply.code(403).send({ error: 'No tienes permisos para esta accion' });
+    return null;
+  }
+  return user;
 }
 
 export function signToken(user) {

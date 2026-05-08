@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -16,6 +17,7 @@ export default function AppLayout({ children }) {
     logout();
     router.replace('/login');
   };
+  const canModerate = user && ['admin', 'moderator'].includes(user.role);
 
   if (loading || !user) {
     return (
@@ -39,6 +41,10 @@ export default function AppLayout({ children }) {
           <div className="app-header__actions">
             {user && (
               <>
+                <nav className="app-nav" aria-label="Navegacion principal">
+                  <Link href="/app">Mapa</Link>
+                  {canModerate && <Link className="app-nav__admin" href="/app/admin">Panel admin</Link>}
+                </nav>
                 <div className="user-info">
                   <span className="reputation">Reputación: {user.reputation}</span>
                   <span className="weight">Peso: {user.review_weight.toFixed(2)}x</span>
@@ -92,6 +98,23 @@ export default function AppLayout({ children }) {
           display: flex;
           align-items: center;
           gap: 1.5rem;
+        }
+
+        .app-nav {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .app-nav a {
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 6px;
+          padding: 0.45rem 0.75rem;
+          color: white;
+          font-weight: 700;
+        }
+
+        .app-nav__admin {
+          background: rgba(255, 255, 255, 0.2);
         }
 
         .user-info {

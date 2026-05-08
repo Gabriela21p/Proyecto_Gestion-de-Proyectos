@@ -44,7 +44,8 @@ export default function AppPage() {
   const [architecture, setArchitecture] = useState(defaultArchitecture);
   const [filters, setFilters] = useState(initialFilters);
   const [reviewForm, setReviewForm] = useState({ username: '', rating: 5, titulo: '', comentario: '' });
-  const [suggestionForm, setSuggestionForm] = useState({ nombre: '', categoria: '', direccion: '', localidad: '', descripcion: '', contacto: '', suggested_by: '' });
+  const [suggestionForm, setSuggestionForm] = useState({ nombre: '', categoria: '', direccion: '', localidad: '', ciudad: '', descripcion: '', contacto: '', suggested_by: '', latitud: '', longitud: '' });
+  const [suggestionPreview, setSuggestionPreview] = useState(null);
   const [toast, setToast] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
@@ -273,7 +274,7 @@ export default function AppPage() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        ...suggestionForm,
+        ...buildSuggestionPayload(),
         suggested_by: suggestionForm.suggested_by || user?.username || '',
       }),
     });
@@ -284,9 +285,46 @@ export default function AppPage() {
       return;
     }
 
-    setSuggestionForm({ nombre: '', categoria: '', direccion: '', localidad: '', descripcion: '', contacto: '', suggested_by: '' });
+    setSuggestionForm({ nombre: '', categoria: '', direccion: '', localidad: '', ciudad: '', descripcion: '', contacto: '', suggested_by: '', latitud: '', longitud: '' });
+    setSuggestionPreview(null);
     setStats((current) => ({ ...current, sugerencias_pendientes: current.sugerencias_pendientes + 1 }));
-    setToast('Sitio sugerido. Queda en cola de moderacion.');
+    setToast(data.duplicates?.length ? 'Sitio sugerido con posible duplicado para revision.' : 'Sitio sugerido. Queda en cola de moderacion.');
+  }
+
+  function buildSuggestionPayload() {
+    return {
+      ...suggestionForm,
+      latitud: suggestionForm.latitud === '' ? undefined : Number(suggestionForm.latitud),
+      longitud: suggestionForm.longitud === '' ? undefined : Number(suggestionForm.longitud),
+    };
+  }
+
+  async function previewSuggestion() {
+    const response = await fetch('/api/site-suggestions/preview', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(buildSuggestionPayload()),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setToast(data.error || 'No se pudo validar la ubicacion.');
+      return;
+    }
+    setSuggestionPreview(data);
+    if (data.suggestion?.latitud && data.suggestion?.longitud) {
+      setSuggestionForm((current) => ({
+        ...current,
+        direccion: current.direccion || data.suggestion.direccion || '',
+        localidad: current.localidad || data.suggestion.localidad || '',
+        ciudad: current.ciudad || data.suggestion.ciudad || '',
+        latitud: String(data.suggestion.latitud),
+        longitud: String(data.suggestion.longitud),
+      }));
+    }
+    setToast(data.duplicates?.length ? 'Ubicacion detectada con posibles duplicados.' : 'Ubicacion detectada sin duplicados cercanos.');
   }
 
   async function reportSelectedSite() {
@@ -495,11 +533,34 @@ export default function AppPage() {
             </div>
             <div className="filter-grid">
               <label>Localidad<input value={suggestionForm.localidad} onChange={(event) => setSuggestionForm((current) => ({ ...current, localidad: event.target.value }))} /></label>
+              <label>Ciudad<input value={suggestionForm.ciudad} onChange={(event) => setSuggestionForm((current) => ({ ...current, ciudad: event.target.value }))} placeholder="Bogota" /></label>
+            </div>
+            <div className="filter-grid">
               <label>Direccion<input value={suggestionForm.direccion} onChange={(event) => setSuggestionForm((current) => ({ ...current, direccion: event.target.value }))} /></label>
+              <label>Contacto opcional<input value={suggestionForm.contacto} onChange={(event) => setSuggestionForm((current) => ({ ...current, contacto: event.target.value }))} /></label>
+            </div>
+            <div className="filter-grid">
+              <label>Latitud<input value={suggestionForm.latitud} onChange={(event) => setSuggestionForm((current) => ({ ...current, latitud: event.target.value }))} placeholder="Auto" /></label>
+              <label>Longitud<input value={suggestionForm.longitud} onChange={(event) => setSuggestionForm((current) => ({ ...current, longitud: event.target.value }))} placeholder="Auto" /></label>
             </div>
             <label>Por que destacarlo<textarea value={suggestionForm.descripcion} onChange={(event) => setSuggestionForm((current) => ({ ...current, descripcion: event.target.value }))} /></label>
-            <label>Contacto opcional<input value={suggestionForm.contacto} onChange={(event) => setSuggestionForm((current) => ({ ...current, contacto: event.target.value }))} /></label>
-            <button className="primary-action" type="submit">Enviar a moderacion</button>
+            {suggestionPreview && (
+              <div className="geo-preview">
+                <strong>{suggestionPreview.suggestion?.latitud ? 'Ubicacion lista' : 'Ubicacion pendiente'}</strong>
+                <span>
+                  {suggestionPreview.suggestion?.latitud
+                    ? `${Number(suggestionPreview.suggestion.latitud).toFixed(5)}, ${Number(suggestionPreview.suggestion.longitud).toFixed(5)}`
+                    : 'Agrega direccion o selecciona coordenadas manuales.'}
+                </span>
+                {suggestionPreview.duplicates?.length > 0 && (
+                  <em>Posible duplicado: {suggestionPreview.duplicates[0].nombre} a {suggestionPreview.duplicates[0].distancia_metros}m</em>
+                )}
+              </div>
+            )}
+            <div className="action-row">
+              <button className="plain-action" type="button" onClick={previewSuggestion}>Validar ubicacion</button>
+              <button className="primary-action" type="submit">Enviar a moderacion</button>
+            </div>
           </form>
         </div>
       </section>
