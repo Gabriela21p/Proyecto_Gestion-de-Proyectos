@@ -107,8 +107,15 @@ const bogotaSeedPoints = [
   { name: 'Teusaquillo', lat: 4.6307, lng: -74.0744, radius: 800 }
 ];
 
+const adminUsers = [
+  ['demo_rolling', 'demo@rolling.local', process.env.DEMO_ADMIN_PASSWORD || 'Demo12345*', 20, 1.6],
+  ['dev1', 'dev1@careculosltda.com', process.env.DEV1_ADMIN_PASSWORD || 'careculos', 10, 1.6],
+  ['sebas_admin', 'sebascarepicha@careculosltda.com', process.env.SEBAS_ADMIN_PASSWORD || 'RollingSebas2026*', 10, 1.6],
+  ['santi_admin', 'santipanochapelada@careculosltda.com', process.env.SANTI_ADMIN_PASSWORD || 'RollingSanti2026*', 10, 1.6]
+];
+
 export async function seedDatabase() {
-  await seedLoginUser();
+  await seedAdminUsers();
 
   const activityIds = new Map();
   for (const [name, icon] of activities) {
@@ -136,6 +143,12 @@ export async function seedDatabase() {
       [name, locality, city]
     );
     neighborhoodIds.set(key, result.rows[0].id);
+  }
+
+  if (process.env.SEED_DEMO_DATA !== '1') {
+    await reindexAllSites();
+    await seedRealOsmSuggestions();
+    return;
   }
 
   const siteIds = new Map();
@@ -223,28 +236,27 @@ export async function seedDatabase() {
   await seedRealOsmSuggestions();
 }
 
-async function seedLoginUser() {
-  const email = 'demo@rolling.local';
-  const username = 'demo_rolling';
-  const passwordHash = await bcrypt.hash('Demo12345*', 12);
-
-  await query(
-    `
-      INSERT INTO users(username, email, password_hash, auth_provider, email_verified, identity_level, role, reputation, review_weight)
-      VALUES($1, $2, $3, 'local', true, 'registered', 'admin', 20, 1.6)
-      ON CONFLICT(email) DO UPDATE SET
-        username = EXCLUDED.username,
-        password_hash = EXCLUDED.password_hash,
-        auth_provider = EXCLUDED.auth_provider,
-        email_verified = EXCLUDED.email_verified,
-        identity_level = EXCLUDED.identity_level,
-        role = EXCLUDED.role,
-        reputation = EXCLUDED.reputation,
-        review_weight = EXCLUDED.review_weight,
-        updated_at = now()
-    `,
-    [username, email, passwordHash]
-  );
+async function seedAdminUsers() {
+  for (const [username, email, password, reputation, reviewWeight] of adminUsers) {
+    const passwordHash = await bcrypt.hash(password, 12);
+    await query(
+      `
+        INSERT INTO users(username, email, password_hash, auth_provider, email_verified, identity_level, role, reputation, review_weight)
+        VALUES($1, $2, $3, 'local', true, 'registered', 'admin', $4, $5)
+        ON CONFLICT(email) DO UPDATE SET
+          username = EXCLUDED.username,
+          password_hash = EXCLUDED.password_hash,
+          auth_provider = EXCLUDED.auth_provider,
+          email_verified = EXCLUDED.email_verified,
+          identity_level = EXCLUDED.identity_level,
+          role = EXCLUDED.role,
+          reputation = EXCLUDED.reputation,
+          review_weight = EXCLUDED.review_weight,
+          updated_at = now()
+      `,
+      [username, email, passwordHash, reputation, reviewWeight]
+    );
+  }
 }
 
 async function seedRealOsmSuggestions() {
