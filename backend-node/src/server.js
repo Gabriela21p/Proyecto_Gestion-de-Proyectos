@@ -15,8 +15,8 @@ import { seedDatabase } from './db/seed.js';
 import { initSearch, searchSites } from './services/search.js';
 import { notificationsQueue, searchQueue, startWorkers, redis } from './services/queues.js';
 import { geocode, nearbyOsmBusinesses } from './services/osm.js';
-import { createReview, createReviewForUser, getSite, listSites, refreshSiteMetrics } from './services/sites.js';
-import { loginUser, optionalUser, registerUser, requireUser, toAuthUser } from './services/auth.js';
+import { createReviewForUser, getSite, listSites, refreshSiteMetrics } from './services/sites.js';
+import { loginUser, registerUser, requireUser, toAuthUser } from './services/auth.js';
 
 const app = Fastify({ logger: true });
 
@@ -152,24 +152,16 @@ app.post('/api/sites/:id/reviews', async (request, reply) => {
   const parsed = reviewSchema.safeParse(request.body);
   if (!parsed.success) return reply.code(400).send({ error: parsed.error.issues[0].message });
 
-  const authUser = await optionalUser(request);
-  const review = authUser
-    ? await createReviewForUser({
-        siteId: request.params.id,
-        user: authUser,
-        rating: parsed.data.rating,
-        title: parsed.data.titulo,
-        body: parsed.data.comentario,
-        verified: parsed.data.verificada
-      })
-    : await createReview({
-        siteId: request.params.id,
-        username: parsed.data.username,
-        rating: parsed.data.rating,
-        title: parsed.data.titulo,
-        body: parsed.data.comentario,
-        verified: false
-      });
+  const authUser = await requireUser(request, reply);
+  if (!authUser) return null;
+  const review = await createReviewForUser({
+    siteId: request.params.id,
+    user: authUser,
+    rating: parsed.data.rating,
+    title: parsed.data.titulo,
+    body: parsed.data.comentario,
+    verified: parsed.data.verificada
+  });
   const site = await getSite(request.params.id);
   await mongoDb().collection('feed_posts').insertOne({
     siteId: request.params.id,
@@ -185,13 +177,15 @@ app.post('/api/sites/:id/reviews', async (request, reply) => {
 });
 
 app.post('/api/sites/:id/reports', async (request, reply) => {
+  const user = await requireUser(request, reply);
+  if (!user) return null;
   const reason = String(request.body?.reason || '').slice(0, 80);
   const detail = String(request.body?.detail || '').slice(0, 1000);
   if (!reason) return reply.code(400).send({ error: 'Debes indicar una razon' });
 
   const result = await query(
-    'INSERT INTO reports(site_id, reason, detail) VALUES($1, $2, $3) RETURNING *',
-    [request.params.id, reason, detail]
+    'INSERT INTO reports(site_id, user_id, reason, detail) VALUES($1, $2, $3, $4) RETURNING *',
+    [request.params.id, user.id, reason, detail]
   );
   await notificationsQueue.add('report:created', result.rows[0]);
   return reply.code(201).send({ report: result.rows[0] });
@@ -214,13 +208,15 @@ app.get('/api/events', async (request) => {
 });
 
 app.post('/api/site-suggestions', async (request, reply) => {
+  const user = await requireUser(request, reply);
+  if (!user) return null;
   const parsed = suggestionSchema.safeParse(request.body);
   if (!parsed.success) return reply.code(400).send({ error: parsed.error.issues[0].message });
   const item = parsed.data;
   const result = await query(
     `
-      INSERT INTO site_suggestions(name, category, address, locality, city, description, contact, suggested_by, lat, lng)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      INSERT INTO site_suggestions(name, category, address, locality, city, description, contact, user_id, suggested_by, lat, lng)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       RETURNING *
     `,
     [
@@ -231,7 +227,8 @@ app.post('/api/site-suggestions', async (request, reply) => {
       item.ciudad || 'Bogota',
       item.descripcion,
       item.contacto || null,
-      item.suggested_by || null,
+      user.id,
+      item.suggested_by || user.username,
       item.latitud || null,
       item.longitud || null
     ]
@@ -249,6 +246,8 @@ app.get('/api/osm/nearby', async (request) => nearbyOsmBusinesses({
 }));
 
 app.post('/api/osm/import-nearby', async (request, reply) => {
+  const user = await requireUser(request, reply);
+  if (!user) return null;
   const lat = Number(request.body?.lat);
   const lng = Number(request.body?.lng);
   const radius = Math.min(Number(request.body?.radius || 700), 2000);
@@ -265,8 +264,8 @@ app.post('/api/osm/import-nearby', async (request, reply) => {
     const address = [tags['addr:street'], tags['addr:housenumber']].filter(Boolean).join(' ');
     const result = await query(
       `
-        INSERT INTO site_suggestions(name, category, address, locality, city, description, contact, suggested_by, lat, lng, status)
-        VALUES($1,$2,$3,$4,$5,$6,$7,'overpass-osm',$8,$9,'pending')
+        INSERT INTO site_suggestions(name, category, address, locality, city, description, contact, user_id, suggested_by, lat, lng, status)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,'overpass-osm',$9,$10,'pending')
         ON CONFLICT DO NOTHING
         RETURNING *
       `,
@@ -278,6 +277,7 @@ app.post('/api/osm/import-nearby', async (request, reply) => {
         tags['addr:city'] || null,
         `Importado desde OpenStreetMap. osm_id=${element.id}`,
         tags.phone || tags.website || null,
+        user.id,
         element.lat || element.center?.lat,
         element.lon || element.center?.lon
       ]
@@ -294,11 +294,15 @@ app.get('/api/feed', async () => {
 });
 
 app.post('/api/feed', async (request, reply) => {
+  const user = await requireUser(request, reply);
+  if (!user) return null;
   const post = {
     siteId: request.body?.siteId || null,
     type: request.body?.type || 'community',
     title: String(request.body?.title || '').slice(0, 140),
     body: String(request.body?.body || '').slice(0, 1600),
+    authorId: user.id,
+    authorUsername: user.username,
     createdAt: new Date()
   };
   const result = await mongoDb().collection('feed_posts').insertOne(post);

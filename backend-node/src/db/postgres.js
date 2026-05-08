@@ -160,6 +160,7 @@ export async function initPostgres() {
       city TEXT DEFAULT 'Bogota',
       description TEXT NOT NULL,
       contact TEXT,
+      user_id UUID REFERENCES users(id) ON DELETE SET NULL,
       suggested_by TEXT,
       lat DOUBLE PRECISION,
       lng DOUBLE PRECISION,
@@ -167,6 +168,7 @@ export async function initPostgres() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
+  await ensureColumn('site_suggestions', 'user_id', 'UUID REFERENCES users(id) ON DELETE SET NULL');
 
   await query('CREATE INDEX IF NOT EXISTS idx_sites_location ON sites USING GIST(location)');
   await query('CREATE INDEX IF NOT EXISTS idx_sites_status_score ON sites(status, trust_score DESC, rating_average DESC)');

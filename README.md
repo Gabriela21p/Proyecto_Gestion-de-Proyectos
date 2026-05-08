@@ -113,7 +113,16 @@ POST /api/auth/login
 GET  /api/auth/me
 ```
 
-Las reviews enviadas con `Authorization: Bearer <token>` quedan asociadas a un usuario real del sistema y se calculan con `weight`.
+La web redirige a `/login` antes de permitir el uso de `/app`. Las acciones de escritura del API tambien exigen `Authorization: Bearer <token>`: reviews, reportes, sugerencias, posts del feed e importaciones OSM. Asi cada valoracion y aporte queda asociado a una identidad del sistema.
+
+Usuario local de prueba:
+
+```text
+Email: dev1@careculosltda.com
+Password: careculos
+```
+
+Las reviews autenticadas se calculan con `weight`.
 
 Factores actuales:
 

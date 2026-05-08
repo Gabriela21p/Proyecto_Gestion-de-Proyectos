@@ -268,8 +268,14 @@ export default function AppPage() {
     event.preventDefault();
     const response = await fetch('/api/site-suggestions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(suggestionForm),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        ...suggestionForm,
+        suggested_by: suggestionForm.suggested_by || user?.username || '',
+      }),
     });
     const data = await response.json();
 
@@ -287,7 +293,10 @@ export default function AppPage() {
     if (!selectedSite) return;
     const response = await fetch(`/api/sites/${selectedSite.id}/reports`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ reason: 'Datos incorrectos', detail: 'Reporte enviado desde el MVP web.' }),
     });
     setToast(response.ok ? 'Reporte enviado a moderacion.' : 'No se pudo enviar el reporte.');

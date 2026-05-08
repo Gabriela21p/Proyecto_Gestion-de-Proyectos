@@ -1,16 +1,32 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function AppLayout({ children }) {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) router.replace('/login');
+  }, [loading, user, router]);
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.replace('/login');
   };
+
+  if (loading || !user) {
+    return (
+      <main className="session-gate" aria-live="polite">
+        <div className="session-gate__panel">
+          <strong>Rolling</strong>
+          <span>Validando tu sesion...</span>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>
