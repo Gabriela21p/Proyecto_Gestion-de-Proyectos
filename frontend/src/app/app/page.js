@@ -29,12 +29,35 @@ const initialFilters = {
   sort: 'recommended',
 };
 
+const categoryIcons = [
+  ['cafe', 'CF'],
+  ['coffee', 'CF'],
+  ['restaurante', 'RS'],
+  ['restaurant', 'RS'],
+  ['gastronomia', 'RS'],
+  ['bar', 'BR'],
+  ['pub', 'BR'],
+  ['cultura', 'CL'],
+  ['musica', 'CL'],
+  ['taller', 'TL'],
+  ['tienda', 'TD'],
+  ['shop', 'TD'],
+  ['mercado', 'MC'],
+  ['hotel', 'HT'],
+  ['turismo', 'TR'],
+  ['salud', 'SL'],
+  ['fitness', 'FT'],
+  ['belleza', 'BZ'],
+  ['evento', 'EV'],
+];
+
 export default function AppPage() {
   const { user, token } = useAuth();
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const previousSiteIdsRef = useRef('');
+  const selectedSiteIdRef = useRef(null);
   const [sites, setSites] = useState([]);
   const [selectedSiteId, setSelectedSiteId] = useState(null);
   const [selectedSite, setSelectedSite] = useState(null);
@@ -50,6 +73,10 @@ export default function AppPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState('');
+
+  useEffect(() => {
+    selectedSiteIdRef.current = selectedSiteId;
+  }, [selectedSiteId]);
 
   useEffect(() => {
     async function loadBootstrap() {
@@ -142,8 +169,11 @@ export default function AppPage() {
   );
 
   const categories = useMemo(
-    () => [...new Set(sites.map((site) => site.categoria).filter(Boolean))],
-    [sites],
+    () => [...new Set([
+      ...sites.map((site) => site.categoria).filter(Boolean),
+      ...activities.map((activity) => activity.nombre).filter(Boolean),
+    ])],
+    [sites, activities],
   );
 
   useEffect(() => {
@@ -205,13 +235,23 @@ export default function AppPage() {
       const maplibregl = (await import('maplibre-gl')).default;
       markersRef.current.forEach((marker) => marker.remove());
       const nextIds = sites.map((site) => site.id).join(',');
-      markersRef.current = sites.map((site) => {
+      const validSites = sites.filter(hasValidCoordinates);
+      markersRef.current = validSites.map((site) => {
         const markerElement = document.createElement('button');
+        const pinElement = document.createElement('span');
+        const iconElement = document.createElement('span');
         markerElement.type = 'button';
-        markerElement.className = `real-map-pin ${selectedSiteId === site.id ? 'real-map-pin--active' : ''}`;
+        markerElement.className = 'real-map-marker';
+        pinElement.className = `real-map-pin ${selectedSiteIdRef.current === site.id ? 'real-map-pin--active' : ''}`;
+        iconElement.className = 'real-map-pin__icon';
         markerElement.dataset.siteId = site.id;
-        markerElement.dataset.score = site.rating_promedio.toFixed(1);
-        markerElement.dataset.events = site.active_events_count > 0 ? 'event' : '';
+        pinElement.dataset.score = formatRating(site.rating_promedio);
+        pinElement.dataset.icon = getCategoryIcon(site.categoria);
+        pinElement.dataset.category = normalizeCategory(site.categoria);
+        pinElement.dataset.events = site.active_events_count > 0 ? 'event' : '';
+        iconElement.textContent = getCategoryIcon(site.categoria);
+        pinElement.appendChild(iconElement);
+        markerElement.appendChild(pinElement);
         markerElement.setAttribute('aria-label', `Ver ${site.nombre}`);
         markerElement.addEventListener('click', () => setSelectedSiteId(site.id));
 
@@ -220,22 +260,31 @@ export default function AppPage() {
           .addTo(mapRef.current);
       });
 
-      if (sites.length > 1 && previousSiteIdsRef.current !== nextIds) {
+      if (validSites.length > 1 && previousSiteIdsRef.current !== nextIds) {
         const bounds = new maplibregl.LngLatBounds();
-        sites.forEach((site) => bounds.extend([site.longitud, site.latitud]));
+        validSites.forEach((site) => bounds.extend([Number(site.longitud), Number(site.latitud)]));
         mapRef.current.fitBounds(bounds, { padding: 86, maxZoom: 13, duration: 600 });
         previousSiteIdsRef.current = nextIds;
+      } else if (validSites.length === 1 && previousSiteIdsRef.current !== nextIds) {
+        mapRef.current.easeTo({
+          center: [Number(validSites[0].longitud), Number(validSites[0].latitud)],
+          zoom: 14,
+          duration: 500,
+        });
+        previousSiteIdsRef.current = nextIds;
+      } else if (validSites.length === 0) {
+        previousSiteIdsRef.current = '';
       }
     }
 
     syncMarkers();
-  }, [sites, mapReady, selectedSiteId]);
+  }, [sites, mapReady]);
 
   useEffect(() => {
     markersRef.current.forEach((marker) => {
       const element = marker.getElement();
       const isActive = element.dataset.siteId === String(selectedSiteId);
-      element.classList.toggle('real-map-pin--active', isActive);
+      element.querySelector('.real-map-pin')?.classList.toggle('real-map-pin--active', isActive);
     });
   }, [selectedSiteId]);
 
@@ -351,6 +400,12 @@ export default function AppPage() {
               <span>{mapError}</span>
             </div>
           )}
+          {!mapError && !isLoading && sites.length === 0 && (
+            <div className="map-empty">
+              <strong>Mapa listo para datos reales</strong>
+              <span>Agrega negocios desde "Sugerir sitio" y apruebalos en el panel admin.</span>
+            </div>
+          )}
 
           <div className="map-brand">
             <strong>Rolling</strong>
@@ -433,7 +488,7 @@ export default function AppPage() {
                   <span>{selectedSite.barrio?.localidad} · {selectedSite.categoria}</span>
                   <h2>{selectedSite.nombre}</h2>
                 </div>
-                <strong>{selectedSite.rating_promedio.toFixed(1)}</strong>
+                <strong>{formatRating(selectedSite.rating_promedio)}</strong>
               </div>
               <p>{selectedSite.descripcion}</p>
               <div className="meta-row">
@@ -461,7 +516,7 @@ export default function AppPage() {
             <div className="site-list">
               {sites.map((site) => (
                 <button type="button" className={`site-row ${selectedSiteId === site.id ? 'site-row--active' : ''}`} key={site.id} onClick={() => setSelectedSiteId(site.id)}>
-                  <span className="site-row__score">{site.rating_promedio.toFixed(1)}</span>
+                  <span className="site-row__score">{formatRating(site.rating_promedio)}</span>
                   <span>
                     <strong>{site.nombre}</strong>
                     <small>{site.barrio?.localidad} · {site.categoria} · {site.total_reviews} reviews</small>
@@ -471,6 +526,12 @@ export default function AppPage() {
                   </span>
                 </button>
               ))}
+              {!isLoading && sites.length === 0 && (
+                <article className="empty-state">
+                  <strong>No hay sitios publicados todavia</strong>
+                  <span>La base quedo limpia para empezar a nutrir Rolling con negocios reales.</span>
+                </article>
+              )}
             </div>
           </section>
 
@@ -602,4 +663,22 @@ export default function AppPage() {
       `}</style>
     </main>
   );
+}
+
+function hasValidCoordinates(site) {
+  return Number.isFinite(Number(site?.latitud)) && Number.isFinite(Number(site?.longitud));
+}
+
+function formatRating(value) {
+  const numeric = Number(value || 0);
+  return numeric > 0 ? numeric.toFixed(1) : 'NEW';
+}
+
+function getCategoryIcon(category = '') {
+  const normalized = normalizeCategory(category);
+  return categoryIcons.find(([key]) => normalized.includes(key))?.[1] || 'LC';
+}
+
+function normalizeCategory(category = '') {
+  return String(category || 'local').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
