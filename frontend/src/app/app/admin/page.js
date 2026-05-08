@@ -411,6 +411,14 @@ function BarChart({ title, description, data, keys }) {
               ))}
             </div>
             <strong>{month.month?.slice(5)}</strong>
+            <div className="bar-values" aria-label={`Valores de ${month.month}`}>
+              {keys.map(([key, label]) => (
+                <span className={`bar-value bar-value--${key}`} title={`${label}: ${month[key] || 0}`} key={key}>
+                  <em>{label.slice(0, 3)}</em>
+                  {month[key] || 0}
+                </span>
+              ))}
+            </div>
           </div>
         ))}
       </div>

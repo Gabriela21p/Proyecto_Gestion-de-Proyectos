@@ -1079,30 +1079,80 @@ textarea {
   text-align: center;
 }
 
+.bar-values {
+  display: grid;
+  gap: 4px;
+}
+
+.bar-value {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--green);
+  border-radius: 7px;
+  padding: 3px 6px 3px 5px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.bar-value em {
+  min-width: 24px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
 .bar-segment--users,
-.legend-dot--users::before {
+.legend-dot--users::before,
+.bar-value--users {
   background: var(--blue);
 }
 
 .bar-segment--sites,
-.legend-dot--sites::before {
+.legend-dot--sites::before,
+.bar-value--sites {
   background: var(--green);
 }
 
 .bar-segment--reviews,
-.legend-dot--reviews::before {
+.legend-dot--reviews::before,
+.bar-value--reviews {
   background: var(--yellow);
 }
 
 .bar-segment--suggestions,
-.legend-dot--suggestions::before {
+.legend-dot--suggestions::before,
+.bar-value--suggestions {
   background: var(--red);
 }
 
 .bar-segment--reports,
-.legend-dot--reports::before {
+.legend-dot--reports::before,
+.bar-value--reports {
   background: var(--ink);
 }
+
+.bar-value--users,
+.bar-value--sites,
+.bar-value--reviews,
+.bar-value--suggestions,
+.bar-value--reports {
+  border-left-color: currentColor;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.bar-value--users { color: var(--blue); }
+.bar-value--sites { color: var(--green); }
+.bar-value--reviews { color: #9a6800; }
+.bar-value--suggestions { color: var(--red); }
+.bar-value--reports { color: var(--ink); }
 
 .chart-legend {
   display: flex;
