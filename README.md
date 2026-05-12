@@ -119,14 +119,14 @@ Usuario local de prueba:
 
 ```text
 Email: dev1@careculosltda.com
-Password: careculos
+Password: *************
 ```
 
 Usuario admin sembrado automaticamente para moderacion:
 
 ```text
 Email: demo@rolling.local
-Password: Demo12345*
+Password: *************
 ```
 
 Las reviews autenticadas se calculan con `weight`.
