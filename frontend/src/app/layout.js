@@ -5,7 +5,7 @@ import { AuthProvider } from '@/lib/AuthContext';
 
 export const metadata = {
   title: 'Rolling Bogotá',
-  description: 'Descubre, registra y clasifica locales destacados de Bogotá.',
+  description: 'Descubre, registra y clasifica lugares destacados de Bogotá.',
 };
 
 export default function RootLayout({ children }) {

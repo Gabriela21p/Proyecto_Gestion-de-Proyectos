@@ -72,11 +72,27 @@ services:
       OFFICIAL_472_TIMEOUT_MS: 30000
       OFFICIAL_472_TOKEN_TIMEOUT_MS: 10000
       OFFICIAL_472_TOKEN_TTL_MS: 3600000
+      SEED_GOOGLE_PLACES_DEMO: "1"
     ports:
       - "4000:4000"
     volumes:
       - ./backend-node:/app
       - rolling_api_node_modules:/app/node_modules
+
+  frontend:
+    image: node:22-alpine
+    container_name: rolling-frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - api
+    environment:
+      API_INTERNAL_URL: http://api:4000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - rolling_frontend_node_modules:/app/node_modules
 
 volumes:
   rolling_postgres:
@@ -84,3 +100,4 @@ volumes:
   rolling_redis:
   rolling_meili:
   rolling_api_node_modules:
+  rolling_frontend_node_modules:

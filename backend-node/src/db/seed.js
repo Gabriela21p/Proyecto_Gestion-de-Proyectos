@@ -19,8 +19,86 @@ const neighborhoods = {
   laureles: ['Laureles', 'Laureles', 'Medellin'],
   getsemani: ['Getsemani', 'Getsemani', 'Cartagena'],
   usaquen: ['Usaquen', 'Usaquen', 'Bogota'],
-  teusaquillo: ['La Soledad', 'Teusaquillo', 'Bogota']
+  teusaquillo: ['La Soledad', 'Teusaquillo', 'Bogota'],
+  engativa: ['Jardin Botanico', 'Engativa', 'Bogota'],
+  candelaria: ['Centro Historico', 'La Candelaria', 'Bogota']
 };
+
+// Catálogo de arranque para demostrar la experiencia con lugares reales que
+// pueden abrirse en Google Maps. No replica reseñas ni calificaciones de Google:
+// esas señales deben construirse dentro de Rolling.
+const googlePlacesDemo = [
+  {
+    name: 'Wilborada 1047',
+    category: 'Libreria y cafe',
+    address: 'Calle 71 #10-47 Int. 4',
+    lat: 4.65347,
+    lng: -74.05967,
+    description: 'Casa libreria de Quinta Camacho con cafe, salas de lectura y una agenda cultural abierta.',
+    neighborhood: 'chapinero',
+    activities: ['Cafe', 'Cultura', 'Eventos']
+  },
+  {
+    name: 'Cafe Cultor Quinta Camacho',
+    category: 'Cafe de especialidad',
+    address: 'Calle 70A #9-44',
+    lat: 4.65303,
+    lng: -74.05786,
+    description: 'Cafe colombiano de especialidad en una casa de barrio pensada para conversar y conocer el origen del grano.',
+    neighborhood: 'chapinero',
+    activities: ['Cafe', 'Trabajo remoto', 'Sostenible']
+  },
+  {
+    name: 'Mercado de las Pulgas de Usaquen',
+    category: 'Mercado local',
+    address: 'Carrera 6A entre calles 119 y 120A',
+    lat: 4.69561,
+    lng: -74.03072,
+    description: 'Mercado tradicional de artesanias, antiguedades, sabores y emprendimientos locales.',
+    neighborhood: 'usaquen',
+    activities: ['Familia', 'Sostenible', 'Eventos']
+  },
+  {
+    name: 'Biblioteca Publica Virgilio Barco',
+    category: 'Biblioteca',
+    address: 'Avenida Carrera 60 #57-60',
+    lat: 4.65851,
+    lng: -74.09317,
+    description: 'Biblioteca publica rodeada de jardines y recorridos de agua, ideal para leer, estudiar y caminar.',
+    neighborhood: 'teusaquillo',
+    activities: ['Cultura', 'Trabajo remoto', 'Familia']
+  },
+  {
+    name: 'Jardin Botanico de Bogota',
+    category: 'Jardin botanico',
+    address: 'Avenida Calle 63 #68-95',
+    lat: 4.66869,
+    lng: -74.10047,
+    description: 'Colecciones vivas de la biodiversidad colombiana, senderos y experiencias ambientales para todas las edades.',
+    neighborhood: 'engativa',
+    activities: ['Sostenible', 'Familia', 'Eventos']
+  },
+  {
+    name: 'Museo del Oro',
+    category: 'Museo',
+    address: 'Carrera 6 #15-88',
+    lat: 4.60187,
+    lng: -74.07202,
+    description: 'Museo dedicado al patrimonio arqueologico y a las historias de las sociedades prehispanicas de Colombia.',
+    neighborhood: 'candelaria',
+    activities: ['Cultura', 'Familia']
+  },
+  {
+    name: 'Centro Cultural Gabriel Garcia Marquez',
+    category: 'Centro cultural',
+    address: 'Calle 11 #5-60',
+    lat: 4.59675,
+    lng: -74.07315,
+    description: 'Arquitectura, libreria, exposiciones y encuentros culturales en el corazon del centro historico.',
+    neighborhood: 'candelaria',
+    activities: ['Cultura', 'Cafe', 'Eventos']
+  }
+];
 
 const sites = [
   {
@@ -145,6 +223,8 @@ export async function seedDatabase() {
     neighborhoodIds.set(key, result.rows[0].id);
   }
 
+  await syncGooglePlacesDemo({ neighborhoodIds, activityIds });
+
   if (process.env.SEED_DEMO_DATA !== '1') {
     await reindexAllSites();
     await seedRealOsmSuggestions();
@@ -234,6 +314,57 @@ export async function seedDatabase() {
   }
   await reindexAllSites();
   await seedRealOsmSuggestions();
+}
+
+async function syncGooglePlacesDemo({ neighborhoodIds, activityIds }) {
+  const source = 'google_places_demo';
+  const enabled = process.env.SEED_GOOGLE_PLACES_DEMO === '1';
+
+  if (!enabled) {
+    await query('DELETE FROM sites WHERE source = $1', [source]);
+    return;
+  }
+
+  for (const site of googlePlacesDemo) {
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${site.name}, ${site.address}, Bogota`)}`;
+    const result = await query(
+      `
+        INSERT INTO sites(neighborhood_id, name, slug, category, address, description, website, source, location)
+        VALUES($1, $2, $3, $4, $5, $6, $7, $8, ST_SetSRID(ST_MakePoint($9, $10), 4326)::geography)
+        ON CONFLICT(slug) DO UPDATE SET
+          neighborhood_id = EXCLUDED.neighborhood_id,
+          category = EXCLUDED.category,
+          address = EXCLUDED.address,
+          description = EXCLUDED.description,
+          website = EXCLUDED.website,
+          source = EXCLUDED.source,
+          location = EXCLUDED.location,
+          status = 'approved',
+          updated_at = now()
+        RETURNING id
+      `,
+      [
+        neighborhoodIds.get(site.neighborhood),
+        site.name,
+        `google-demo-${slugify(site.name)}`,
+        site.category,
+        site.address,
+        site.description,
+        mapsUrl,
+        source,
+        site.lng,
+        site.lat
+      ]
+    );
+
+    await query('DELETE FROM site_activities WHERE site_id = $1', [result.rows[0].id]);
+    for (const activity of site.activities) {
+      await query(
+        'INSERT INTO site_activities(site_id, activity_id) VALUES($1, $2) ON CONFLICT DO NOTHING',
+        [result.rows[0].id, activityIds.get(activity)]
+      );
+    }
+  }
 }
 
 async function seedAdminUsers() {

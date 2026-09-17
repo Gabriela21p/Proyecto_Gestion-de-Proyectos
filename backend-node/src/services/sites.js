@@ -228,6 +228,7 @@ export function toSiteDto(row) {
     telefono: row.phone,
     website: row.website,
     imagen_url: row.image_url,
+    fuente: row.source,
     latitud: Number(row.lat),
     longitud: Number(row.lng),
     status: row.status,

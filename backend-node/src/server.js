@@ -32,8 +32,30 @@ await app.register(helmet);
 await app.register(cors, { origin: [config.frontendOrigin, 'http://localhost:3000'], credentials: true });
 await app.register(rateLimit, { max: 240, timeWindow: '1 minute' });
 await app.register(swagger, {
+  transform: ({ schema = {}, url }) => {
+    const tag = getDocumentationTag(url);
+    return {
+      schema: tag && !schema.tags ? { ...schema, tags: [tag] } : schema,
+      url
+    };
+  },
   swagger: {
-    info: { title: 'Rolling API', version: '0.1.0' }
+    info: {
+      title: 'Rolling API',
+      version: '0.1.0',
+      description: 'API REST de Rolling, organizada por capas funcionales.'
+    },
+    tags: [
+      { name: 'Plataforma', description: 'Estado y puntos de entrada del servicio.' },
+      { name: 'Identidad', description: 'Registro, inicio de sesión y sesión actual.' },
+      { name: 'Catálogos', description: 'Datos base para inicializar clientes y filtros.' },
+      { name: 'Administración', description: 'Analítica y gestión de usuarios con permisos elevados.' },
+      { name: 'Sitios y reputación', description: 'Consulta de sitios, reseñas y reportes.' },
+      { name: 'Eventos', description: 'Agenda de eventos aprobados.' },
+      { name: 'Sugerencias y moderación', description: 'Propuestas de nuevos sitios y su revisión.' },
+      { name: 'Descubrimiento geográfico', description: 'Búsqueda, geocodificación e importación desde OpenStreetMap.' },
+      { name: 'Comunidad', description: 'Publicaciones del feed comunitario.' }
+    ]
   }
 });
 await app.register(swaggerUi, { routePrefix: '/docs' });
@@ -681,6 +703,19 @@ function parseDateFilter(value) {
 
 function cleanFilter(value) {
   return String(value || '').trim().slice(0, 80);
+}
+
+function getDocumentationTag(url) {
+  if (url === '/' || url === '/health' || url === '/api/health') return 'Plataforma';
+  if (url.startsWith('/api/auth')) return 'Identidad';
+  if (url === '/api/bootstrap' || url === '/api/stats' || url === '/api/neighborhoods' || url === '/api/activities') return 'Catálogos';
+  if (url.startsWith('/api/admin')) return 'Administración';
+  if (url.startsWith('/api/sites')) return 'Sitios y reputación';
+  if (url === '/api/events') return 'Eventos';
+  if (url.startsWith('/api/site-suggestions')) return 'Sugerencias y moderación';
+  if (url === '/api/search' || url.startsWith('/api/osm')) return 'Descubrimiento geográfico';
+  if (url.startsWith('/api/feed')) return 'Comunidad';
+  return null;
 }
 
 function buildArchitecture() {

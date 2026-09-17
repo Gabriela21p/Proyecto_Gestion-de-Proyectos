@@ -105,6 +105,25 @@ Desde la raiz:
 docker compose up -d postgres mongo redis meilisearch api
 ```
 
+El `docker-compose.yml` incluye también el frontend web. Para levantar la experiencia completa:
+
+```powershell
+docker compose up -d
+```
+
+Abre `http://localhost:3000` para la aplicación y `http://localhost:4000/docs` para la documentación de la API.
+
+### Catálogo demo de Google Maps
+
+La demo puede precargar un catálogo curado de lugares reales de Bogotá con enlaces de consulta en Google Maps. No se copian reseñas ni calificaciones de Google; esas señales empiezan vacías para que Rolling construya su propia reputación.
+
+```text
+SEED_GOOGLE_PLACES_DEMO=1  # registra o actualiza los lugares demo
+SEED_GOOGLE_PLACES_DEMO=0  # retira únicamente los lugares de esta fuente demo
+```
+
+Docker lo activa por defecto para facilitar las pruebas. En otros entornos se configura desde `backend-node/.env`.
+
 Verifica la API:
 
 ```powershell

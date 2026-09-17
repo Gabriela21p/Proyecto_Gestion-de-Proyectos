@@ -42,7 +42,7 @@ export default function AppLayout({ children }) {
         <div className="rolling-header__glass">
           <Link className="rolling-brand" href="/app">
             <span className="rolling-brand__orb">R</span>
-            <span><strong>Rolling</strong><small>Bogotá D.C.</small></span>
+            <span><strong>Rolling</strong><small>Explora Bogotá</small></span>
           </Link>
 
           <nav className="rolling-nav" aria-label="Navegación principal">
@@ -54,19 +54,19 @@ export default function AppLayout({ children }) {
           <div className="rolling-user">
             <span className="rolling-user__stats"><b>{user.reputation}</b><small>reputación</small></span>
             <span className="rolling-user__identity"><strong>{user.username}</strong><small>{user.role}</small></span>
-            <button className="rolling-logout" onClick={handleLogout} aria-label="Cerrar sesión">↗</button>
+            <button className="rolling-logout" onClick={handleLogout} aria-label="Cerrar sesión">Salir</button>
           </div>
         </div>
       </header>
       {children}
 
       <style jsx>{`
-        .rolling-header{position:sticky;top:0;z-index:1000;padding:9px 12px;background:linear-gradient(180deg,rgba(232,239,238,.94),rgba(232,239,238,.58));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-        .rolling-header__glass{max-width:1460px;margin:auto;min-height:58px;padding:8px 10px 8px 12px;border-radius:21px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:20px;border:1px solid rgba(255,255,255,.82);background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.5));box-shadow:0 14px 36px rgba(44,55,70,.12),inset 0 1px 0 rgba(255,255,255,.98);backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%)}
-        .rolling-brand{display:flex;align-items:center;gap:9px;color:#172033}.rolling-brand__orb{display:grid;width:39px;height:39px;place-items:center;border-radius:14px;color:#fff;background:linear-gradient(135deg,#4f46e5,#8b5cf6);box-shadow:0 9px 20px rgba(79,70,229,.26),inset 0 1px 0 rgba(255,255,255,.35);font-weight:950}.rolling-brand>span:last-child{display:grid;line-height:1.05}.rolling-brand strong{font-size:.95rem;letter-spacing:-.02em}.rolling-brand small{margin-top:3px;color:#7c8798;font-size:.61rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
-        .rolling-nav{display:flex;justify-content:center;gap:7px}.rolling-nav :global(.rolling-nav__link){padding:9px 13px;border-radius:13px;color:#516073;font-size:.78rem;font-weight:850;transition:.18s}.rolling-nav :global(.rolling-nav__link:hover){color:#4f46e5;background:rgba(255,255,255,.65);box-shadow:5px 5px 12px rgba(71,85,105,.1),-5px -5px 12px rgba(255,255,255,.82)}.rolling-nav :global(.rolling-nav__link--active){color:#4f46e5;background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(238,242,255,.66));box-shadow:inset 0 0 0 1px rgba(99,102,241,.14),5px 5px 12px rgba(71,85,105,.08),-5px -5px 12px rgba(255,255,255,.8)}
-        .rolling-user{display:flex;align-items:center;gap:10px}.rolling-user__stats,.rolling-user__identity{display:grid;line-height:1.05}.rolling-user__stats{text-align:right;padding-right:10px;border-right:1px solid rgba(148,163,184,.2)}.rolling-user__stats b{font-size:.82rem;color:#4f46e5}.rolling-user small{margin-top:3px;color:#8b96a7;font-size:.58rem;text-transform:uppercase;letter-spacing:.06em}.rolling-user__identity strong{font-size:.78rem;max-width:120px;overflow:hidden;text-overflow:ellipsis}.rolling-logout{width:39px;height:39px;border:0;border-radius:13px;background:#edf2f1;box-shadow:5px 5px 12px rgba(71,85,105,.13),-5px -5px 12px rgba(255,255,255,.92);font-size:1rem;font-weight:900;color:#64748b}.rolling-logout:active{box-shadow:inset 4px 4px 9px rgba(71,85,105,.12),inset -4px -4px 9px #fff}
-        @media(max-width:800px){.rolling-header{padding:6px}.rolling-header__glass{grid-template-columns:auto 1fr;gap:8px;border-radius:18px}.rolling-nav{grid-column:1/-1;order:3;justify-content:flex-start;overflow:auto;padding-top:3px}.rolling-user__stats,.rolling-user__identity{display:none}.rolling-user{justify-self:end}.rolling-nav :global(.rolling-nav__link){white-space:nowrap;padding:8px 11px}}
+        .rolling-header{position:sticky;top:0;z-index:1000;height:76px;padding:0 24px;background:#18231f;color:#f8f6f0}
+        .rolling-header__glass{width:100%;height:76px;margin:auto;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:28px}
+        .rolling-brand{display:flex;align-items:center;gap:10px;color:#fff}.rolling-brand__orb{display:grid;width:38px;height:38px;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:50%;color:#18231f;background:#dbe9b5;font-family:Georgia,"Times New Roman",serif;font-weight:900}.rolling-brand>span:last-child{display:grid;line-height:1.05}.rolling-brand strong{font-family:Georgia,"Times New Roman",serif;font-size:1.05rem}.rolling-brand small{margin-top:4px;color:#a9b4ae;font-size:.56rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
+        .rolling-nav{display:flex;justify-content:center;gap:4px}.rolling-nav :global(.rolling-nav__link){padding:9px 13px;border-radius:999px;color:#adb8b2;font-size:.75rem;font-weight:800;transition:.18s}.rolling-nav :global(.rolling-nav__link:hover){color:#fff;background:rgba(255,255,255,.07)}.rolling-nav :global(.rolling-nav__link--active){color:#18231f;background:#f8f6f0}
+        .rolling-user{display:flex;align-items:center;gap:11px}.rolling-user__stats,.rolling-user__identity{display:grid;line-height:1.05}.rolling-user__stats{text-align:right;padding-right:11px;border-right:1px solid rgba(255,255,255,.12)}.rolling-user__stats b{font-size:.8rem;color:#dbe9b5}.rolling-user small{margin-top:3px;color:#8f9d96;font-size:.55rem;text-transform:uppercase;letter-spacing:.08em}.rolling-user__identity strong{font-size:.76rem;max-width:120px;overflow:hidden;text-overflow:ellipsis}.rolling-logout{height:34px;border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:0 12px;background:transparent;color:#e7ebe8;font-size:.68rem;font-weight:800}.rolling-logout:hover{border-color:#dbe9b5;color:#dbe9b5}
+        @media(max-width:800px){.rolling-header{height:auto;padding:8px 12px}.rolling-header__glass{height:auto;grid-template-columns:auto 1fr;gap:8px}.rolling-nav{grid-column:1/-1;order:3;justify-content:flex-start;overflow:auto;padding-top:3px}.rolling-user__stats,.rolling-user__identity{display:none}.rolling-user{justify-self:end}.rolling-nav :global(.rolling-nav__link){white-space:nowrap;padding:8px 11px}}
       `}</style>
     </>
   );
