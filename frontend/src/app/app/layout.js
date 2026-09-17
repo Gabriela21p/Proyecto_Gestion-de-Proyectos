@@ -31,49 +31,42 @@ export default function AppLayout({ children }) {
     );
   }
 
-  const navItem = (href, label) => (
-    <Link className={pathname === href || pathname.startsWith(`${href}/`) ? 'app-nav__link app-nav__link--active' : 'app-nav__link'} href={href}>
-      {label}
-    </Link>
-  );
+  const navItem = (href, label) => {
+    const active = href === '/app' ? pathname === '/app' : pathname === href || pathname.startsWith(`${href}/`);
+    return <Link className={active ? 'rolling-nav__link rolling-nav__link--active' : 'rolling-nav__link'} href={href}>{label}</Link>;
+  };
 
   return (
     <>
-      <header className="app-header">
-        <div className="app-header__content">
-          <Link href="/app" className="app-header__brand">
-            <span className="brand-mark">R</span>
-            <span>
-              <strong>Rolling Bogotá</strong>
-              <small>Descubre lugares que sí valen la pena</small>
-            </span>
+      <header className="rolling-header">
+        <div className="rolling-header__glass">
+          <Link className="rolling-brand" href="/app">
+            <span className="rolling-brand__orb">R</span>
+            <span><strong>Rolling</strong><small>Bogotá D.C.</small></span>
           </Link>
 
-          <nav className="app-nav" aria-label="Navegación principal">
+          <nav className="rolling-nav" aria-label="Navegación principal">
             {navItem('/app', 'Explorar')}
             {navItem('/app/registrar', 'Registrar local')}
             {canModerate && navItem('/app/admin', 'Moderación')}
           </nav>
 
-          <div className="app-header__actions">
-            <div className="user-chip">
-              <span className="user-chip__avatar">{user.username?.slice(0, 1).toUpperCase()}</span>
-              <span><strong>{user.username}</strong><small>{user.reputation} pts · {user.role}</small></span>
-            </div>
-            <button className="logout-btn" onClick={handleLogout}>Salir</button>
+          <div className="rolling-user">
+            <span className="rolling-user__stats"><b>{user.reputation}</b><small>reputación</small></span>
+            <span className="rolling-user__identity"><strong>{user.username}</strong><small>{user.role}</small></span>
+            <button className="rolling-logout" onClick={handleLogout} aria-label="Cerrar sesión">↗</button>
           </div>
         </div>
       </header>
       {children}
+
       <style jsx>{`
-        .app-header{position:sticky;top:0;z-index:1000;background:rgba(17,24,39,.96);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.08);color:#fff}
-        .app-header__content{max-width:1500px;margin:0 auto;padding:.8rem 1.5rem;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:2rem}
-        .app-header__brand{display:flex;align-items:center;gap:.8rem;color:#fff;text-decoration:none;min-width:max-content}
-        .brand-mark{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,#7c3aed,#2563eb);display:grid;place-items:center;font-weight:900;box-shadow:0 8px 28px rgba(79,70,229,.35)}
-        .app-header__brand>span:last-child{display:grid;gap:.1rem}.app-header__brand strong{font-size:.98rem}.app-header__brand small{font-size:.72rem;color:#9ca3af;font-weight:500}
-        .app-nav{display:flex;justify-content:center;gap:.35rem}.app-nav :global(.app-nav__link){padding:.55rem .82rem;border-radius:10px;color:#cbd5e1;text-decoration:none;font-size:.87rem;font-weight:700}.app-nav :global(.app-nav__link:hover){background:rgba(255,255,255,.07);color:#fff}.app-nav :global(.app-nav__link--active){background:#fff;color:#111827}
-        .app-header__actions{display:flex;align-items:center;gap:.75rem}.user-chip{display:flex;align-items:center;gap:.55rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);padding:.4rem .6rem;border-radius:12px}.user-chip__avatar{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#4f46e5;font-weight:800}.user-chip>span:last-child{display:grid;line-height:1.15}.user-chip strong{font-size:.78rem}.user-chip small{font-size:.66rem;color:#9ca3af}.logout-btn{border:1px solid rgba(255,255,255,.12);background:transparent;color:#d1d5db;padding:.58rem .72rem;border-radius:10px;cursor:pointer;font-weight:700}.logout-btn:hover{background:rgba(255,255,255,.07);color:#fff}
-        @media(max-width:900px){.app-header__content{grid-template-columns:1fr auto;gap:.8rem}.app-nav{grid-column:1/-1;grid-row:2;justify-content:flex-start;overflow:auto}.app-header__brand small,.user-chip>span:last-child{display:none}}
+        .rolling-header{position:sticky;top:0;z-index:1000;padding:9px 12px;background:linear-gradient(180deg,rgba(232,239,238,.94),rgba(232,239,238,.58));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+        .rolling-header__glass{max-width:1460px;margin:auto;min-height:58px;padding:8px 10px 8px 12px;border-radius:21px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:20px;border:1px solid rgba(255,255,255,.82);background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.5));box-shadow:0 14px 36px rgba(44,55,70,.12),inset 0 1px 0 rgba(255,255,255,.98);backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%)}
+        .rolling-brand{display:flex;align-items:center;gap:9px;color:#172033}.rolling-brand__orb{display:grid;width:39px;height:39px;place-items:center;border-radius:14px;color:#fff;background:linear-gradient(135deg,#4f46e5,#8b5cf6);box-shadow:0 9px 20px rgba(79,70,229,.26),inset 0 1px 0 rgba(255,255,255,.35);font-weight:950}.rolling-brand>span:last-child{display:grid;line-height:1.05}.rolling-brand strong{font-size:.95rem;letter-spacing:-.02em}.rolling-brand small{margin-top:3px;color:#7c8798;font-size:.61rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+        .rolling-nav{display:flex;justify-content:center;gap:7px}.rolling-nav :global(.rolling-nav__link){padding:9px 13px;border-radius:13px;color:#516073;font-size:.78rem;font-weight:850;transition:.18s}.rolling-nav :global(.rolling-nav__link:hover){color:#4f46e5;background:rgba(255,255,255,.65);box-shadow:5px 5px 12px rgba(71,85,105,.1),-5px -5px 12px rgba(255,255,255,.82)}.rolling-nav :global(.rolling-nav__link--active){color:#4f46e5;background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(238,242,255,.66));box-shadow:inset 0 0 0 1px rgba(99,102,241,.14),5px 5px 12px rgba(71,85,105,.08),-5px -5px 12px rgba(255,255,255,.8)}
+        .rolling-user{display:flex;align-items:center;gap:10px}.rolling-user__stats,.rolling-user__identity{display:grid;line-height:1.05}.rolling-user__stats{text-align:right;padding-right:10px;border-right:1px solid rgba(148,163,184,.2)}.rolling-user__stats b{font-size:.82rem;color:#4f46e5}.rolling-user small{margin-top:3px;color:#8b96a7;font-size:.58rem;text-transform:uppercase;letter-spacing:.06em}.rolling-user__identity strong{font-size:.78rem;max-width:120px;overflow:hidden;text-overflow:ellipsis}.rolling-logout{width:39px;height:39px;border:0;border-radius:13px;background:#edf2f1;box-shadow:5px 5px 12px rgba(71,85,105,.13),-5px -5px 12px rgba(255,255,255,.92);font-size:1rem;font-weight:900;color:#64748b}.rolling-logout:active{box-shadow:inset 4px 4px 9px rgba(71,85,105,.12),inset -4px -4px 9px #fff}
+        @media(max-width:800px){.rolling-header{padding:6px}.rolling-header__glass{grid-template-columns:auto 1fr;gap:8px;border-radius:18px}.rolling-nav{grid-column:1/-1;order:3;justify-content:flex-start;overflow:auto;padding-top:3px}.rolling-user__stats,.rolling-user__identity{display:none}.rolling-user{justify-self:end}.rolling-nav :global(.rolling-nav__link){white-space:nowrap;padding:8px 11px}}
       `}</style>
     </>
   );
