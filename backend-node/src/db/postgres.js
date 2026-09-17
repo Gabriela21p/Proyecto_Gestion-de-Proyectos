@@ -9,8 +9,7 @@ export const pool = new Pool({
 });
 
 export async function query(text, params = []) {
-  const result = await pool.query(text, params);
-  return result;
+  return pool.query(text, params);
 }
 
 export async function initPostgres() {
@@ -180,6 +179,45 @@ export async function initPostgres() {
   await ensureColumn('site_suggestions', 'reviewed_at', 'TIMESTAMPTZ');
   await ensureColumn('site_suggestions', 'rejection_reason', 'TEXT');
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS postal_municipalities (
+      divipola VARCHAR(5) PRIMARY KEY,
+      department TEXT NOT NULL,
+      department_key TEXT NOT NULL,
+      municipality TEXT NOT NULL,
+      municipality_key TEXT NOT NULL,
+      source TEXT NOT NULL DEFAULT 'client',
+      last_verified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS address_resolutions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      address_key TEXT NOT NULL,
+      query_address TEXT NOT NULL,
+      standard_address TEXT NOT NULL,
+      department TEXT NOT NULL,
+      department_key TEXT NOT NULL,
+      municipality TEXT NOT NULL,
+      municipality_key TEXT NOT NULL,
+      divipola VARCHAR(5) NOT NULL,
+      postal_code VARCHAR(12) NOT NULL,
+      expanded_postal_code VARCHAR(24),
+      lat DOUBLE PRECISION,
+      lng DOUBLE PRECISION,
+      source TEXT NOT NULL,
+      confidence NUMERIC(4,3) NOT NULL DEFAULT 1.0,
+      verification_count INTEGER NOT NULL DEFAULT 1,
+      raw_response JSONB,
+      first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      last_verified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      last_used_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE(address_key, divipola)
+    )
+  `);
+
   await query('CREATE INDEX IF NOT EXISTS idx_sites_location ON sites USING GIST(location)');
   await query('CREATE INDEX IF NOT EXISTS idx_sites_status_score ON sites(status, trust_score DESC, rating_average DESC)');
   await query('CREATE INDEX IF NOT EXISTS idx_sites_category ON sites(category, status)');
@@ -187,6 +225,9 @@ export async function initPostgres() {
   await query('CREATE INDEX IF NOT EXISTS idx_events_dates ON events(status, starts_on, ends_on)');
   await query('CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status, created_at DESC)');
   await query('CREATE INDEX IF NOT EXISTS idx_site_suggestions_status ON site_suggestions(status, created_at DESC)');
+  await query('CREATE INDEX IF NOT EXISTS idx_postal_municipality_lookup ON postal_municipalities(department_key, municipality_key)');
+  await query('CREATE INDEX IF NOT EXISTS idx_address_resolution_lookup ON address_resolutions(divipola, address_key)');
+  await query('CREATE INDEX IF NOT EXISTS idx_address_resolution_standard_trgm ON address_resolutions USING GIN(standard_address gin_trgm_ops)');
 }
 
 async function ensureColumn(table, column, definition) {
