@@ -27,6 +27,12 @@ export async function resolveRollingAddress({
     return toAddressResult(learned, 'rolling_address_db', true);
   }
 
+  const communityAddress = await findCommunityAddress({
+    address: queryAddress,
+    municipality: resolvedMunicipality?.municipality || municipality
+  });
+  if (communityAddress) return communityAddress;
+
   if (!allowLive) {
     return {
       found: false,
@@ -174,6 +180,46 @@ async function findLearnedAddress({ addressKey, divipola }) {
     [addressKey, String(divipola || '')]
   );
   return result.rows[0] || null;
+}
+
+async function findCommunityAddress({ address, municipality }) {
+  const normalizedMunicipality = normalizeText(municipality);
+  const result = await query(
+    `
+      SELECT address, city, department, divipola, postal_code, lat, lng, created_at
+      FROM site_suggestions
+      WHERE address IS NOT NULL
+        AND lat IS NOT NULL
+        AND lng IS NOT NULL
+        AND lower(trim(address)) = lower(trim($1))
+        AND ($2 = '' OR lower(regexp_replace(city, '[^a-zA-Z0-9]+', ' ', 'g')) LIKE '%' || $2 || '%')
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+    [address, normalizedMunicipality]
+  );
+
+  const row = result.rows[0];
+  if (!row) return null;
+
+  return {
+    found: true,
+    source: 'rolling_community_db',
+    cache_hit: true,
+    provider: 'rolling_site_suggestion',
+    address: row.address,
+    standard_address: row.address,
+    department: row.department,
+    municipality: row.city,
+    divipola: row.divipola,
+    postal_code: row.postal_code,
+    expanded_postal_code: null,
+    lat: numericOrNull(row.lat),
+    lon: numericOrNull(row.lng),
+    confidence: row.postal_code ? 0.97 : 0.9,
+    verification_count: 1,
+    last_verified_at: row.created_at
+  };
 }
 
 async function resolveOfficial472({ address, department, municipality, divipola }) {
