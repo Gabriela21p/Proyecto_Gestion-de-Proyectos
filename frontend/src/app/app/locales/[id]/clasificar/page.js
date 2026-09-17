@@ -1,10 +1,18 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 
-const steps = ['Puntuación', 'Experiencia', 'Validación'];
+const steps = ['Calificación', 'Reseña', 'Confirmar'];
+const ratings = [
+  { value: 1, label: 'Muy mala', hint: 'No volvería' },
+  { value: 2, label: 'Mala', hint: 'Debe mejorar' },
+  { value: 3, label: 'Bien', hint: 'Cumplió' },
+  { value: 4, label: 'Muy buena', hint: 'La recomiendo' },
+  { value: 5, label: 'Excelente', hint: 'Imperdible' }
+];
 
 export default function ClassifyPlacePage() {
   const { id } = useParams();
@@ -17,7 +25,7 @@ export default function ClassifyPlacePage() {
   const [form, setForm] = useState({ rating: 5, titulo: '', comentario: '', verificada: false });
 
   useEffect(() => {
-    fetch(`/api/sites/${id}`).then((r) => r.ok ? r.json() : null).then(setSite).catch(() => {});
+    fetch(`/api/sites/${id}`).then((response) => response.ok ? response.json() : null).then(setSite).catch(() => {});
   }, [id]);
 
   const canContinue = useMemo(() => {
@@ -27,7 +35,8 @@ export default function ClassifyPlacePage() {
   }, [step, form]);
 
   async function submit() {
-    setLoading(true); setMessage('Publicando tu clasificación…');
+    setLoading(true);
+    setMessage('Publicando tu reseña…');
     try {
       const response = await fetch(`/api/sites/${id}/reviews`, {
         method: 'POST',
@@ -35,55 +44,135 @@ export default function ClassifyPlacePage() {
         body: JSON.stringify({ username: user?.username, rating: Number(form.rating), titulo: form.titulo, comentario: form.comentario, verificada: form.verificada })
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'No se pudo publicar la clasificación');
-      setMessage('Clasificación publicada. El Rolling Score se actualizó.');
+      if (!response.ok) throw new Error(data.error || 'No se pudo publicar la reseña');
+      setMessage('Tu reseña quedó publicada. El Rolling Score ya fue actualizado.');
       setTimeout(() => router.push(`/app/locales/${id}`), 650);
-    } catch (error) { setMessage(error.message); }
+    } catch (error) {
+      setMessage(error.message);
+    }
     setLoading(false);
   }
 
-  if (!site) return <main className="classify-shell"><div className="classify-card">Cargando local…</div></main>;
+  if (!site) return <main className="review-loading"><span className="review-loading__mark">R</span><strong>Cargando lugar…</strong></main>;
+
+  const selectedRating = ratings.find((item) => item.value === Number(form.rating));
 
   return (
-    <main className="classify-shell">
-      <section className="classify-intro">
-        <span className="eyebrow">CLASIFICACIÓN COMUNITARIA</span>
-        <h1>{site.nombre}</h1>
-        <p>Tu experiencia alimenta el ranking real de lugares en Bogotá. Sé específico y útil para otras personas.</p>
-      </section>
+    <main className="review-page">
+      <div className="review-frame">
+        <aside className="review-place">
+          <Link href={`/app/locales/${id}`} className="review-back">← Volver al lugar</Link>
+          <div className="review-place__content">
+            <span className="review-place__kicker">Tu opinión importa</span>
+            <h1>{site.nombre}</h1>
+            <p>{site.descripcion || 'Ayuda a otras personas a saber qué pueden esperar de este lugar.'}</p>
+            <dl>
+              <div><dt>Categoría</dt><dd>{site.categoria}</dd></div>
+              <div><dt>Zona</dt><dd>{site.barrio?.localidad || 'Bogotá'}</dd></div>
+              <div><dt>Dirección</dt><dd>{site.direccion || 'Por confirmar'}</dd></div>
+            </dl>
+          </div>
+          <div className="review-principle">
+            <span>●</span>
+            <p><strong>Una comunidad más útil</strong>Describe tu experiencia con claridad. No necesitas exagerar para que tu reseña cuente.</p>
+          </div>
+        </aside>
 
-      <section className="classify-card liquid-panel">
-        <div className="stepper">
-          {steps.map((label, index) => <div key={label} className={`step ${index === step ? 'active' : ''} ${index < step ? 'done' : ''}`}><span>{index < step ? '✓' : index + 1}</span><small>{label}</small></div>)}
-        </div>
-
-        <div className="classify-body">
-          {step === 0 && <>
-            <span className="eyebrow">PASO 1</span><h2>¿Cómo calificas tu experiencia?</h2>
-            <div className="rating-picker">
-              {[1,2,3,4,5].map((rating) => <button type="button" key={rating} className={Number(form.rating) === rating ? 'rating-option active' : 'rating-option'} onClick={() => setForm((f) => ({ ...f, rating }))}><strong>{rating}</strong><span>{rating <= 2 ? 'Mala' : rating === 3 ? 'Regular' : rating === 4 ? 'Buena' : 'Excelente'}</span></button>)}
+        <section className="review-form-card">
+          <header className="review-form-head">
+            <div>
+              <span className="review-form-head__index">0{step + 1}</span>
+              <div><small>Reseña comunitaria</small><strong>{steps[step]}</strong></div>
             </div>
-          </>}
+            <span className="review-progress-copy">{step + 1} de {steps.length}</span>
+          </header>
 
-          {step === 1 && <>
-            <span className="eyebrow">PASO 2</span><h2>Cuenta qué viviste</h2>
-            <label>Título <span>opcional</span><input value={form.titulo} onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))} placeholder="Ej. Excelente café para trabajar" /></label>
-            <label>Reseña<textarea rows="7" value={form.comentario} onChange={(e) => setForm((f) => ({ ...f, comentario: e.target.value }))} placeholder="¿Qué pediste, cómo fue el servicio, el ambiente y qué deberían saber otros visitantes?" /></label>
-          </>}
+          <div className="review-progress" aria-label={`Paso ${step + 1} de ${steps.length}`}>
+            {steps.map((label, index) => (
+              <div key={label} className={index <= step ? 'review-progress__item review-progress__item--active' : 'review-progress__item'}>
+                <span />
+                <small>{label}</small>
+              </div>
+            ))}
+          </div>
 
-          {step === 2 && <>
-            <span className="eyebrow">PASO 3</span><h2>Confirma tu aporte</h2>
-            <div className="summary-card"><div><small>PUNTUACIÓN</small><strong>★ {form.rating}.0</strong></div><div><small>RESEÑA</small><p>{form.comentario}</p></div></div>
-            <label className="verify-toggle"><input type="checkbox" checked={form.verificada} onChange={(e) => setForm((f) => ({ ...f, verificada: e.target.checked }))} /><span><strong>Visité este lugar</strong><small>Marca esta opción sólo si tu experiencia corresponde a una visita real.</small></span></label>
-          </>}
-        </div>
+          <div className="review-form-body">
+            {step === 0 && (
+              <div className="review-step">
+                <div className="review-step__heading">
+                  <span className="section-number">01</span>
+                  <div><h2>¿Cómo estuvo tu experiencia?</h2><p>Elige la opción que mejor representa tu visita.</p></div>
+                </div>
+                <div className="rating-grid">
+                  {ratings.map((item) => (
+                    <button
+                      type="button"
+                      key={item.value}
+                      className={Number(form.rating) === item.value ? 'rating-choice rating-choice--active' : 'rating-choice'}
+                      onClick={() => setForm((current) => ({ ...current, rating: item.value }))}
+                      aria-pressed={Number(form.rating) === item.value}
+                    >
+                      <span className="rating-choice__number">{item.value}</span>
+                      <strong>{item.label}</strong>
+                      <small>{item.hint}</small>
+                    </button>
+                  ))}
+                </div>
+                <div className="rating-selection"><span>Tu selección</span><strong>{form.rating}/5 · {selectedRating?.label}</strong></div>
+              </div>
+            )}
 
-        {message && <div className="message">{message}</div>}
-        <footer><button type="button" className="back" disabled={step === 0 || loading} onClick={() => setStep((s) => s - 1)}>Atrás</button>{step < 2 ? <button type="button" className="next" disabled={!canContinue} onClick={() => setStep((s) => s + 1)}>Continuar</button> : <button type="button" className="next" disabled={loading} onClick={submit}>{loading ? 'Publicando…' : 'Publicar clasificación'}</button>}</footer>
-      </section>
+            {step === 1 && (
+              <div className="review-step">
+                <div className="review-step__heading">
+                  <span className="section-number">02</span>
+                  <div><h2>Cuéntanos qué pasó</h2><p>Los detalles concretos hacen que tu reseña sea más útil.</p></div>
+                </div>
+                <label className="review-field">
+                  <span>Título <em>opcional</em></span>
+                  <input value={form.titulo} onChange={(event) => setForm((current) => ({ ...current, titulo: event.target.value }))} placeholder="Resume tu experiencia en una frase" maxLength="120" />
+                </label>
+                <label className="review-field">
+                  <span>Tu experiencia</span>
+                  <textarea rows="6" value={form.comentario} onChange={(event) => setForm((current) => ({ ...current, comentario: event.target.value }))} placeholder="¿Qué destacarías del servicio, el ambiente o la experiencia?" maxLength="1200" />
+                  <small>{form.comentario.length}/1200 · mínimo 12 caracteres</small>
+                </label>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="review-step">
+                <div className="review-step__heading">
+                  <span className="section-number">03</span>
+                  <div><h2>Todo listo para publicar</h2><p>Revisa tu aporte antes de compartirlo con la comunidad.</p></div>
+                </div>
+                <div className="review-summary">
+                  <div className="review-summary__score"><strong>{form.rating}.0</strong><span>de 5</span></div>
+                  <div><small>{form.titulo || selectedRating?.label}</small><p>{form.comentario}</p></div>
+                </div>
+                <label className="visit-check">
+                  <input type="checkbox" checked={form.verificada} onChange={(event) => setForm((current) => ({ ...current, verificada: event.target.checked }))} />
+                  <span><strong>Confirmo que visité este lugar</strong><small>Esta señal mejora el peso de tu aporte en Rolling.</small></span>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {message && <div className="review-message" role="status">{message}</div>}
+
+          <footer className="review-form-footer">
+            <button type="button" className="button-quiet" disabled={step === 0 || loading} onClick={() => setStep((current) => current - 1)}>Atrás</button>
+            {step < 2
+              ? <button type="button" className="button-primary" disabled={!canContinue || loading} onClick={() => setStep((current) => current + 1)}>Continuar <span>→</span></button>
+              : <button type="button" className="button-primary" disabled={loading} onClick={submit}>{loading ? 'Publicando…' : 'Publicar reseña'} <span>→</span></button>}
+          </footer>
+        </section>
+      </div>
 
       <style jsx>{`
-        .classify-shell{min-height:calc(100vh - 65px);padding:44px 20px 70px;background:radial-gradient(circle at 20% 10%,rgba(124,58,237,.13),transparent 28%),radial-gradient(circle at 80% 30%,rgba(14,165,233,.1),transparent 25%),linear-gradient(145deg,#edf2f4,#e4e9ed)}.classify-intro{max-width:760px;margin:0 auto 23px;text-align:center}.classify-intro h1{font-size:clamp(2rem,5vw,3.6rem);letter-spacing:-.045em;margin:6px 0 10px}.classify-intro p{color:#64748b;line-height:1.6}.liquid-panel{max-width:760px;margin:auto;border-radius:30px;background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.48));border:1px solid rgba(255,255,255,.84);backdrop-filter:blur(28px) saturate(145%);box-shadow:0 28px 70px rgba(51,65,85,.14),inset 0 1px 0 #fff;overflow:hidden}.stepper{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:24px 30px;border-bottom:1px solid rgba(148,163,184,.15)}.step{display:grid;justify-items:center;gap:7px;color:#94a3b8}.step>span{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#e9eef1;box-shadow:5px 5px 11px rgba(71,85,105,.14),-5px -5px 11px #fff;font-weight:900}.step small{font-size:.68rem;font-weight:900}.step.active>span{background:linear-gradient(135deg,#4f46e5,#8b5cf6);color:#fff;box-shadow:0 8px 18px rgba(79,70,229,.28)}.step.done>span{background:#dcfce7;color:#15803d}.classify-body{min-height:390px;padding:38px 42px;display:grid;align-content:start;gap:18px}.eyebrow{font-size:.64rem;font-weight:900;letter-spacing:.14em;color:#6366f1}.classify-body h2{font-size:1.55rem;margin:-6px 0 7px}.rating-picker{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:13px}.rating-option{padding:16px 7px;border-radius:17px;background:#ebeff2;box-shadow:7px 7px 15px rgba(71,85,105,.12),-7px -7px 15px #fff;display:grid;gap:5px;transition:.2s}.rating-option strong{font-size:1.8rem}.rating-option span{font-size:.68rem;color:#64748b}.rating-option.active{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 12px 25px rgba(79,70,229,.25);transform:translateY(-3px)}.rating-option.active span{color:#e0e7ff}.classify-body label{display:grid;gap:7px;font-size:.8rem;font-weight:900;color:#334155}.classify-body label>span{font-weight:500;color:#94a3b8}.classify-body input[type=text],.classify-body input:not([type]),.classify-body textarea{border:0;outline:none;border-radius:15px;padding:13px 15px;background:#edf1f3;box-shadow:inset 5px 5px 12px rgba(71,85,105,.09),inset -5px -5px 12px #fff;resize:vertical}.summary-card{display:grid;gap:10px}.summary-card>div{padding:15px;border-radius:17px;background:rgba(255,255,255,.55);box-shadow:0 8px 19px rgba(51,65,85,.06),inset 0 1px 0 #fff;display:grid;gap:4px}.summary-card small{font-size:.62rem;letter-spacing:.12em;color:#6366f1;font-weight:900}.summary-card p{margin:0;color:#475569;line-height:1.55}.verify-toggle{grid-template-columns:auto 1fr!important;align-items:flex-start!important;padding:15px;border-radius:17px;background:rgba(236,253,245,.64);border:1px solid rgba(16,185,129,.16)}.verify-toggle input{margin-top:4px}.verify-toggle span{display:grid;gap:3px;color:#166534!important}.verify-toggle small{color:#4b7b68}.message{margin:0 42px 18px;padding:11px 14px;border-radius:13px;background:rgba(238,242,255,.76);color:#4338ca;font-weight:800;font-size:.8rem}.classify-card footer{padding:20px 42px 28px;border-top:1px solid rgba(148,163,184,.14);display:flex;justify-content:space-between}.back,.next{padding:12px 20px;border-radius:14px;font-weight:900}.back{background:#e9eef1;box-shadow:6px 6px 14px rgba(71,85,105,.12),-6px -6px 14px #fff}.next{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 10px 23px rgba(79,70,229,.25)}button:disabled{opacity:.4}@media(max-width:650px){.classify-shell{padding:25px 10px}.classify-body{padding:28px 20px}.rating-picker{grid-template-columns:repeat(5,1fr);gap:5px}.rating-option{padding:12px 3px}.rating-option span{display:none}.classify-card footer{padding:18px 20px}.message{margin:0 20px 15px}}
+        .review-page{min-height:calc(100vh - 76px);padding:32px;background:#eeece5;color:#19241f}.review-frame{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,760px);max-width:1120px;min-height:650px;margin:0 auto;border:1px solid #d9d8d0;border-radius:22px;overflow:hidden;background:#fff;box-shadow:0 24px 70px rgba(25,38,31,.11)}.review-place{display:flex;flex-direction:column;padding:28px;color:#f8f6f0;background:#1b2b24}.review-back{width:max-content;color:#b8c4bd;font-size:.72rem;font-weight:800}.review-back:hover{color:#fff}.review-place__content{margin:auto 0}.review-place__kicker{display:flex;align-items:center;gap:8px;color:#dbe9b5;font-size:.65rem;font-weight:900;letter-spacing:.13em;text-transform:uppercase}.review-place__kicker::before{content:"";width:22px;height:2px;background:#dbe9b5}.review-place h1{margin:15px 0 14px;font-family:Georgia,"Times New Roman",serif;font-size:clamp(2.2rem,4vw,3.65rem);font-weight:500;line-height:.96;letter-spacing:-.04em}.review-place__content>p{margin:0 0 28px;color:#b8c4bd;font-size:.84rem;line-height:1.65}.review-place dl{display:grid;gap:0;margin:0}.review-place dl>div{display:grid;grid-template-columns:75px 1fr;gap:12px;padding:11px 0;border-top:1px solid rgba(255,255,255,.11)}.review-place dt{color:#7f9288;font-size:.63rem;font-weight:800;text-transform:uppercase}.review-place dd{margin:0;color:#edf1ee;font-size:.76rem;line-height:1.4}.review-principle{display:grid;grid-template-columns:auto 1fr;gap:10px;padding-top:20px;border-top:1px solid rgba(255,255,255,.11)}.review-principle>span{color:#dbe9b5}.review-principle p{display:grid;gap:4px;margin:0;color:#94a69c;font-size:.68rem;line-height:1.45}.review-principle strong{color:#fff;font-size:.73rem}.review-form-card{display:flex;min-width:0;flex-direction:column;background:#fff}.review-form-head{display:flex;align-items:center;justify-content:space-between;padding:24px 30px 18px}.review-form-head>div{display:flex;align-items:center;gap:11px}.review-form-head__index{display:grid;width:36px;height:36px;place-items:center;border-radius:50%;color:#1b2b24;background:#dbe9b5;font-size:.68rem;font-weight:900}.review-form-head div div{display:grid;gap:2px}.review-form-head small{color:#8b948f;font-size:.58rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.review-form-head strong{font-family:Georgia,"Times New Roman",serif;font-size:1.05rem}.review-progress-copy{color:#7b857f;font-size:.66rem;font-weight:800}.review-progress{display:grid;grid-template-columns:repeat(3,1fr);padding:0 30px 20px}.review-progress__item{position:relative;display:grid;gap:7px;color:#9ba39f}.review-progress__item::before{position:absolute;top:4px;left:8px;right:-8px;height:1px;background:#dde0dc;content:""}.review-progress__item:last-child::before{right:calc(100% - 8px)}.review-progress__item span{position:relative;z-index:1;width:9px;height:9px;border:2px solid #fff;border-radius:50%;background:#cbd0cc;box-shadow:0 0 0 1px #cbd0cc}.review-progress__item small{font-size:.6rem;font-weight:800}.review-progress__item--active{color:#285f4a}.review-progress__item--active::before,.review-progress__item--active span{background:#285f4a}.review-progress__item--active span{box-shadow:0 0 0 1px #285f4a}.review-form-body{flex:1;padding:34px 42px;border-top:1px solid #ecece7;border-bottom:1px solid #ecece7}.review-step{display:grid;gap:22px}.review-step__heading{display:grid;grid-template-columns:38px 1fr;gap:14px;align-items:start}.section-number{padding-top:6px;color:#d25d41;font-size:.65rem;font-weight:900;letter-spacing:.08em}.review-step h2{margin:0 0 5px;font-family:Georgia,"Times New Roman",serif;font-size:1.85rem;font-weight:600;letter-spacing:-.025em}.review-step__heading p{margin:0;color:#77827c;font-size:.8rem;line-height:1.5}.rating-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.rating-choice{display:grid;justify-items:start;gap:4px;min-height:122px;border:1px solid #dfe1dc;border-radius:13px;padding:14px 11px;background:#f8f7f3;text-align:left;transition:transform .16s,border-color .16s,background .16s,color .16s}.rating-choice:hover{border-color:#aebbb4;transform:translateY(-2px)}.rating-choice__number{font-family:Georgia,"Times New Roman",serif;font-size:2rem;line-height:1}.rating-choice strong{margin-top:auto;font-size:.72rem}.rating-choice small{color:#89928d;font-size:.58rem}.rating-choice--active{border-color:#285f4a;color:#fff;background:#285f4a;box-shadow:0 10px 22px rgba(40,95,74,.18)}.rating-choice--active small{color:#c9d8d0}.rating-selection{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #ecece7;padding-top:16px;color:#7e8882;font-size:.7rem}.rating-selection strong{color:#285f4a}.review-field{display:grid;gap:8px;color:#334039;font-size:.72rem;font-weight:900}.review-field>span{display:flex;gap:7px}.review-field em{color:#9ca49f;font-style:normal;font-weight:500}.review-field input,.review-field textarea{width:100%;border:1px solid #d9ddd8;border-radius:11px;padding:13px 14px;color:#1d2a24;background:#fbfaf7;outline:none;resize:vertical}.review-field input:focus,.review-field textarea:focus{border-color:#285f4a;box-shadow:0 0 0 3px rgba(40,95,74,.09)}.review-field>small{justify-self:end;color:#929b96;font-size:.6rem;font-weight:500}.review-summary{display:grid;grid-template-columns:110px 1fr;gap:18px;border:1px solid #dfe2dd;border-radius:14px;padding:18px;background:#f8f7f3}.review-summary__score{display:grid;place-content:center;border-right:1px solid #dfe2dd}.review-summary__score strong{font-family:Georgia,"Times New Roman",serif;font-size:2.5rem;color:#285f4a}.review-summary__score span{color:#88928d;font-size:.65rem}.review-summary>div:last-child{display:grid;align-content:center;gap:7px}.review-summary small{font-weight:900}.review-summary p{margin:0;color:#5f6b65;font-size:.78rem;line-height:1.55}.visit-check{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:11px;border:1px solid #d7ded8;border-radius:12px;padding:14px;background:#f2f6f2}.visit-check input{width:17px;height:17px;margin-top:2px;accent-color:#285f4a}.visit-check span{display:grid;gap:3px}.visit-check strong{font-size:.76rem}.visit-check small{color:#748078;font-size:.65rem}.review-message{margin:16px 30px 0;border-left:3px solid #285f4a;padding:10px 12px;color:#285f4a;background:#f0f5f1;font-size:.72rem;font-weight:800}.review-form-footer{display:flex;justify-content:space-between;padding:20px 30px}.button-quiet,.button-primary{min-height:42px;border-radius:999px;padding:0 18px;font-size:.72rem;font-weight:900}.button-quiet{border:1px solid #d9ddd8;background:#fff;color:#56625c}.button-primary{display:flex;align-items:center;gap:16px;color:#fff;background:#1b2b24}.button-primary span{display:grid;width:24px;height:24px;place-items:center;border-radius:50%;color:#1b2b24;background:#dbe9b5}.button-primary:hover{background:#285f4a}.button-quiet:disabled,.button-primary:disabled{cursor:not-allowed;opacity:.38}.review-loading{display:grid;min-height:calc(100vh - 76px);place-content:center;justify-items:center;gap:10px;background:#eeece5}.review-loading__mark{display:grid;width:46px;height:46px;place-items:center;border-radius:50%;color:#1b2b24;background:#dbe9b5;font-family:Georgia,"Times New Roman",serif;font-weight:900}
+        @media(max-width:820px){.review-page{padding:14px}.review-frame{grid-template-columns:1fr}.review-place{min-height:330px}.review-place__content{margin:45px 0}.review-form-body{padding:30px 24px}.rating-grid{grid-template-columns:repeat(5,minmax(80px,1fr));overflow:auto;padding-bottom:5px}.rating-choice{min-width:80px}.review-form-head,.review-form-footer{padding-left:24px;padding-right:24px}.review-progress{padding-left:24px;padding-right:24px}}
+        @media(max-width:520px){.review-page{padding:0}.review-frame{border:0;border-radius:0}.review-place{padding:22px}.review-place h1{font-size:2.55rem}.review-form-body{padding:26px 18px}.review-step h2{font-size:1.55rem}.review-summary{grid-template-columns:1fr}.review-summary__score{border-right:0;border-bottom:1px solid #dfe2dd;padding-bottom:12px}.review-form-head,.review-form-footer{padding-left:18px;padding-right:18px}}
       `}</style>
     </main>
   );
