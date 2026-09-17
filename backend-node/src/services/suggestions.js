@@ -1,8 +1,9 @@
 import { query } from '../db/postgres.js';
-import { geocode } from './osm.js';
+import { resolveRollingAddress } from './postal472.js';
 import { getSite, reindexAllSites, slugify } from './sites.js';
 
 const DEFAULT_CITY = 'Bogota';
+const DEFAULT_DEPARTMENT = 'BOGOTA D.C.';
 const DUPLICATE_RADIUS_METERS = 90;
 
 export async function listSiteSuggestions({ status = 'pending', limit = 80 } = {}) {
@@ -40,10 +41,10 @@ export async function createSiteSuggestion({ item, user }) {
   const result = await query(
     `
       INSERT INTO site_suggestions(
-        name, category, address, locality, city, description, contact,
-        user_id, suggested_by, lat, lng, duplicate_site_id
+        name, category, address, locality, city, department, divipola, postal_code,
+        description, contact, user_id, suggested_by, lat, lng, duplicate_site_id
       )
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
       RETURNING *
     `,
     [
@@ -52,6 +53,9 @@ export async function createSiteSuggestion({ item, user }) {
       enriched.direccion || null,
       enriched.localidad || null,
       enriched.ciudad || DEFAULT_CITY,
+      enriched.departamento || null,
+      enriched.divipola || null,
+      enriched.codigo_postal || null,
       enriched.descripcion,
       enriched.contacto || null,
       user.id,
@@ -64,7 +68,8 @@ export async function createSiteSuggestion({ item, user }) {
 
   return {
     suggestion: toSuggestionDto(result.rows[0]),
-    duplicates
+    duplicates,
+    address_resolution: enriched.address_resolution || null
   };
 }
 
@@ -75,19 +80,15 @@ export async function previewSuggestionLocation(item) {
     lat: enriched.latitud,
     lng: enriched.longitud
   });
-  return { suggestion: enriched, duplicates };
+  return { suggestion: enriched, duplicates, address_resolution: enriched.address_resolution || null };
 }
 
 export async function approveSiteSuggestion({ suggestionId, moderator }) {
   const existing = await query('SELECT * FROM site_suggestions WHERE id = $1', [suggestionId]);
   const suggestion = existing.rows[0];
   if (!suggestion) return null;
-  if (suggestion.status !== 'pending') {
-    throw new Error('La sugerencia ya fue revisada');
-  }
-  if (!suggestion.lat || !suggestion.lng) {
-    throw new Error('La sugerencia no tiene coordenadas validas');
-  }
+  if (suggestion.status !== 'pending') throw new Error('La sugerencia ya fue revisada');
+  if (!suggestion.lat || !suggestion.lng) throw new Error('La sugerencia no tiene coordenadas validas verificadas por Rolling/4-72');
 
   const duplicates = await findNearbyDuplicates({
     name: suggestion.name,
@@ -95,10 +96,7 @@ export async function approveSiteSuggestion({ suggestionId, moderator }) {
     lng: suggestion.lng
   });
   if (duplicates.length > 0) {
-    await query(
-      'UPDATE site_suggestions SET duplicate_site_id = $1 WHERE id = $2',
-      [duplicates[0].id, suggestion.id]
-    );
+    await query('UPDATE site_suggestions SET duplicate_site_id = $1 WHERE id = $2', [duplicates[0].id, suggestion.id]);
     throw new Error(`Posible duplicado: ${duplicates[0].nombre}`);
   }
 
@@ -160,11 +158,7 @@ export async function findNearbyDuplicates({ name, lat, lng, radius = DUPLICATE_
   const result = await query(
     `
       SELECT
-        s.id,
-        s.name,
-        s.category,
-        s.address,
-        s.rating_average,
+        s.id, s.name, s.category, s.address, s.rating_average,
         ST_Y(s.location::geometry) AS lat,
         ST_X(s.location::geometry) AS lng,
         ST_Distance(s.location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) AS distance_meters,
@@ -196,28 +190,32 @@ export async function findNearbyDuplicates({ name, lat, lng, radius = DUPLICATE_
 async function enrichSuggestionLocation(item) {
   const candidate = { ...item };
   if (candidate.latitud && candidate.longitud) return candidate;
+  if (!candidate.direccion) return candidate;
 
-  const queryText = [
-    candidate.nombre,
-    candidate.direccion,
-    candidate.localidad,
-    candidate.ciudad || DEFAULT_CITY,
-    'Colombia'
-  ].filter(Boolean).join(', ');
+  const city = candidate.ciudad || DEFAULT_CITY;
+  const department = candidate.departamento || (isBogota(city) ? DEFAULT_DEPARTMENT : '');
+  const resolution = await resolveRollingAddress({
+    address: candidate.direccion,
+    department,
+    municipality: city,
+    divipola: candidate.divipola,
+    allowLive: true
+  });
 
-  if (!queryText.trim()) return candidate;
-
-  const matches = await geocode(queryText);
-  const match = matches?.[0];
-  if (!match) return candidate;
+  if (!resolution.found || !resolution.lat || !resolution.lon) {
+    return { ...candidate, address_resolution: resolution };
+  }
 
   return {
     ...candidate,
-    direccion: candidate.direccion || match.display_name,
-    localidad: candidate.localidad || match.address?.suburb || match.address?.neighbourhood || match.address?.city_district,
-    ciudad: candidate.ciudad || match.address?.city || match.address?.town || match.address?.municipality || DEFAULT_CITY,
-    latitud: Number(match.lat),
-    longitud: Number(match.lon)
+    direccion: resolution.standard_address || candidate.direccion,
+    departamento: resolution.department || department,
+    ciudad: resolution.municipality || city,
+    divipola: resolution.divipola || candidate.divipola,
+    codigo_postal: resolution.postal_code || null,
+    latitud: Number(resolution.lat),
+    longitud: Number(resolution.lon),
+    address_resolution: resolution
   };
 }
 
@@ -256,6 +254,11 @@ function normalizeContactWebsite(contact) {
   return value.slice(0, 180);
 }
 
+function isBogota(value) {
+  const normalized = String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return normalized.includes('bogota');
+}
+
 function toSuggestionDto(row) {
   return {
     id: row.id,
@@ -264,6 +267,9 @@ function toSuggestionDto(row) {
     direccion: row.address,
     localidad: row.locality,
     ciudad: row.city,
+    departamento: row.department,
+    divipola: row.divipola,
+    codigo_postal: row.postal_code,
     descripcion: row.description,
     contacto: row.contact,
     suggested_by: row.suggested_by || row.username,
