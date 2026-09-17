@@ -12,6 +12,9 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || 'dev-change-this-secret-before-production',
   jwtIssuer: process.env.JWT_ISSUER || 'rolling-api',
   osmTileUrl: process.env.OSM_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  // Compatibilidad temporal con endpoints OSM antiguos. El flujo de direcciones de Rolling ya no los usa.
+  nominatimUrl: process.env.NOMINATIM_URL || 'https://nominatim.openstreetmap.org',
+  overpassUrl: process.env.OVERPASS_URL || 'https://overpass-api.de/api/interpreter',
   official472EntryUrl: process.env.OFFICIAL_472_ENTRY_URL || 'https://visor.codigopostal.gov.co/RestService472/CodigoPostal/EntryOrdinary',
   official472TokenUrl: process.env.OFFICIAL_472_TOKEN_URL || 'https://visor.codigopostal.gov.co/472/visor/javascript/layout.aspx',
   official472TimeoutMs: Number(process.env.OFFICIAL_472_TIMEOUT_MS || 30000),
