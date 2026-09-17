@@ -66,33 +66,21 @@ services:
       REDIS_URL: redis://redis:6379
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: rolling_master_key
-      NOMINATIM_URL: https://nominatim.openstreetmap.org
-      OVERPASS_URL: https://overpass-api.de/api/interpreter
+      OSM_TILE_URL: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+      OFFICIAL_472_ENTRY_URL: https://visor.codigopostal.gov.co/RestService472/CodigoPostal/EntryOrdinary
+      OFFICIAL_472_TOKEN_URL: https://visor.codigopostal.gov.co/472/visor/javascript/layout.aspx
+      OFFICIAL_472_TIMEOUT_MS: 30000
+      OFFICIAL_472_TOKEN_TIMEOUT_MS: 10000
+      OFFICIAL_472_TOKEN_TTL_MS: 3600000
     ports:
       - "4000:4000"
     volumes:
       - ./backend-node:/app
       - rolling_api_node_modules:/app/node_modules
 
-  # Servicios pesados opcionales. Para MVP se usan Nominatim/Overpass publicos por defecto.
-  # Activalos con: docker compose --profile geo up
-  nominatim:
-    profiles: ["geo"]
-    image: mediagis/nominatim:4.4
-    container_name: rolling-nominatim
-    environment:
-      PBF_URL: https://download.geofabrik.de/south-america/colombia-latest.osm.pbf
-      REPLICATION_URL: https://download.geofabrik.de/south-america/colombia-updates/
-      NOMINATIM_PASSWORD: rolling
-    ports:
-      - "8080:8080"
-    volumes:
-      - rolling_nominatim:/var/lib/postgresql/14/main
-
 volumes:
   rolling_postgres:
   rolling_mongo:
   rolling_redis:
   rolling_meili:
-  rolling_nominatim:
   rolling_api_node_modules:
