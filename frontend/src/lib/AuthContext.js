@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { loginAccount, registerAccount, getCurrentUser, getSession, saveSession, clearSession } from './auth';
+import { installPostal472FetchInterceptor } from './postal472FetchInterceptor';
 
 const AuthContext = createContext(null);
 
@@ -11,6 +12,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    installPostal472FetchInterceptor();
     let isMounted = true;
 
     async function initSession() {
