@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -15,6 +15,22 @@ export default function RegisterPlacePage() {
   const [message, setMessage] = useState('');
   const [preview, setPreview] = useState(null);
   const [form, setForm] = useState({ nombre: '', categoria: '', direccion: '', localidad: '', descripcion: '', contacto: '', latitud: '', longitud: '' });
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const direccion = searchParams.get('direccion') || '';
+    const latitud = searchParams.get('latitud') || '';
+    const longitud = searchParams.get('longitud') || '';
+    if (!direccion || !latitud || !longitud) return;
+    setForm((current) => ({
+      ...current,
+      direccion,
+      localidad: searchParams.get('localidad') || current.localidad,
+      latitud,
+      longitud
+    }));
+    setMessage('Dirección precargada desde el mapa. Completa la identidad del lugar para continuar.');
+  }, []);
 
   const canContinue = useMemo(() => {
     if (step === 0) return form.nombre.trim().length >= 3 && form.categoria;
