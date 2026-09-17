@@ -157,6 +157,9 @@ export async function initPostgres() {
       address TEXT,
       locality TEXT,
       city TEXT DEFAULT 'Bogota',
+      department TEXT,
+      divipola VARCHAR(5),
+      postal_code VARCHAR(12),
       description TEXT NOT NULL,
       contact TEXT,
       user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -173,6 +176,9 @@ export async function initPostgres() {
     )
   `);
   await ensureColumn('site_suggestions', 'user_id', 'UUID REFERENCES users(id) ON DELETE SET NULL');
+  await ensureColumn('site_suggestions', 'department', 'TEXT');
+  await ensureColumn('site_suggestions', 'divipola', 'VARCHAR(5)');
+  await ensureColumn('site_suggestions', 'postal_code', 'VARCHAR(12)');
   await ensureColumn('site_suggestions', 'duplicate_site_id', 'UUID REFERENCES sites(id) ON DELETE SET NULL');
   await ensureColumn('site_suggestions', 'approved_site_id', 'UUID REFERENCES sites(id) ON DELETE SET NULL');
   await ensureColumn('site_suggestions', 'reviewed_by', 'UUID REFERENCES users(id) ON DELETE SET NULL');
