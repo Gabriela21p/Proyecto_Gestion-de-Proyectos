@@ -12,10 +12,90 @@ Rolling es una app comunitaria para descubrir sitios destacables por localidad, 
 - Datos geo/relacionales: PostgreSQL + PostGIS.
 - Feed flexible: MongoDB.
 - Busqueda: Meilisearch.
-- Mapas/geocoding: OpenStreetMap tiles, Overpass API y Nominatim publico por defecto.
+- Mapa visual: OpenStreetMap tiles.
+- Resolucion de direcciones: base propia Rolling + servicio oficial 4-72 como fuente autoritativa externa.
 - Identidad: registro/login JWT local, listo para migrar o federar con Supabase Auth.
 - Reputacion: las reviews de usuarios registrados pesan mas que las anonimas; usuarios verificados/moderadores pueden tener mayor peso.
 - Infra preparada: Supabase Auth y Cloudflare R2 via variables `.env`, pendientes de credenciales.
+
+## Direcciones: arquitectura local-first con aprendizaje 4-72
+
+Rolling ya no usa Nominatim como fuente principal para resolver direcciones de nuevas sugerencias. El flujo nuevo toma como referencia la estrategia validada en `PostalViewer` y utiliza el visor oficial de Codigo Postal 4-72.
+
+La prioridad es la siguiente:
+
+```text
+1. Direccion ingresada por el usuario
+        |
+        v
+2. Rolling busca la direccion normalizada en address_resolutions
+        |
+        +-- existe y tiene alta confianza --> responde desde PostgreSQL
+        |
+        +-- no existe --> consulta oficial 4-72
+                              |
+                              v
+                    direccion estandar + coordenadas
+                    codigo postal + DIVIPOLA
+                              |
+                              v
+                    Rolling guarda/aprende el resultado
+                              |
+                              v
+                    siguientes consultas salen de nuestra BD
+```
+
+### Objetivo
+
+El servicio oficial 4-72 actua como fuente autoritativa de aprendizaje, no como una dependencia que deba consultarse indefinidamente para la misma direccion. Cada resultado confirmado pasa a formar parte de la base geografica propia de Rolling.
+
+### Datos aprendidos
+
+La tabla `address_resolutions` conserva:
+
+- clave normalizada de direccion;
+- direccion digitada originalmente;
+- direccion estandar entregada por 4-72;
+- departamento;
+- municipio;
+- codigo DIVIPOLA;
+- codigo postal;
+- codigo postal ampliado;
+- latitud y longitud;
+- proveedor/origen del dato;
+- nivel de confianza;
+- numero de verificaciones;
+- respuesta original de referencia;
+- fecha de primera captura;
+- fecha de ultima verificacion;
+- fecha de ultimo uso.
+
+La tabla `postal_municipalities` permite que Rolling tambien aprenda el catalogo municipio/departamento/DIVIPOLA progresivamente.
+
+### Consulta desde el dispositivo
+
+`frontend/src/lib/postal472Client.js` contiene un cliente para intentar la consulta 4-72 desde el dispositivo del usuario. Esto distribuye las peticiones entre los clientes en vez de concentrarlas en una unica IP del backend.
+
+En una aplicacion nativa el cliente puede comunicarse directamente con el servicio remoto. En navegador, el proveedor puede bloquear llamadas cross-origin mediante CORS. Por eso la arquitectura mantiene un fallback local-first desde el backend.
+
+El comportamiento esperado es:
+
+```text
+Dispositivo -> intenta 4-72 directamente
+             |
+             +-- exito --> usa direccion/coords oficiales
+             |
+             +-- bloqueo CORS/error --> backend Rolling
+                                         |
+                                         +-- BD propia
+                                         +-- 4-72 solo si no conoce la direccion
+```
+
+De esta forma un bloqueo de CORS no rompe el flujo y, al mismo tiempo, el volumen de consultas externas disminuye a medida que crece la base propia.
+
+### OpenStreetMap
+
+OpenStreetMap se mantiene como proveedor de tiles para dibujar el mapa con MapLibre. Los endpoints OSM antiguos del backend se conservan temporalmente por compatibilidad, pero el flujo de resolucion de direcciones de nuevas sugerencias ya no depende de Nominatim.
 
 ## Levantar servicios
 
@@ -75,19 +155,23 @@ $env:EXPO_PUBLIC_API_URL="http://TU_IP_LOCAL:4000"
 npm run start
 ```
 
-## Servicios opcionales pesados
-
-El MVP usa Nominatim y Overpass publicos. Si quieres Nominatim local:
-
-```powershell
-docker compose --profile geo up -d nominatim
-```
-
-Ese servicio descarga datos de Colombia y puede tardar bastante.
-
-## Variables externas pendientes
+## Configuracion 4-72
 
 Copia `backend-node/.env.example` a `backend-node/.env` si vas a correr backend fuera de Docker.
+
+Variables principales:
+
+```text
+OFFICIAL_472_ENTRY_URL=https://visor.codigopostal.gov.co/RestService472/CodigoPostal/EntryOrdinary
+OFFICIAL_472_TOKEN_URL=https://visor.codigopostal.gov.co/472/visor/javascript/layout.aspx
+OFFICIAL_472_TIMEOUT_MS=30000
+OFFICIAL_472_TOKEN_TIMEOUT_MS=10000
+OFFICIAL_472_TOKEN_TTL_MS=3600000
+```
+
+El token usado por el visor no se deja quemado en codigo. Se obtiene dinamicamente desde el recurso JavaScript del visor y se conserva temporalmente en memoria.
+
+## Variables externas pendientes
 
 Para Supabase Auth necesitas:
 
@@ -101,7 +185,7 @@ Para Cloudflare R2 necesitas:
 - `CLOUDFLARE_R2_SECRET_ACCESS_KEY`
 - `CLOUDFLARE_R2_BUCKET`
 
-Sin esas credenciales, el MVP funciona con auth simulada de comunidad y sin subida real de fotos.
+Sin esas credenciales, el MVP funciona con autenticacion local y sin subida real de fotos.
 
 ## Auth y valoraciones ponderadas
 
@@ -113,21 +197,7 @@ POST /api/auth/login
 GET  /api/auth/me
 ```
 
-La web redirige a `/login` antes de permitir el uso de `/app`. Las acciones de escritura del API tambien exigen `Authorization: Bearer <token>`: reviews, reportes, sugerencias, posts del feed e importaciones OSM. Asi cada valoracion y aporte queda asociado a una identidad del sistema.
-
-Usuario local de prueba:
-
-```text
-Email: dev1@careculosltda.com
-Password: *************
-```
-
-Usuario admin sembrado automaticamente para moderacion:
-
-```text
-Email: demo@rolling.local
-Password: *************
-```
+La web redirige a `/login` antes de permitir el uso de `/app`. Las acciones de escritura del API tambien exigen `Authorization: Bearer <token>`.
 
 Las reviews autenticadas se calculan con `weight`.
 
@@ -148,10 +218,19 @@ SUM(rating * weight) / SUM(weight)
 
 ## Registro y moderacion de nuevos sitios
 
-Flujo funcional:
+Flujo funcional actualizado:
 
 ```text
-Usuario sugiere sitio -> API geocodifica con Nominatim -> PostGIS detecta duplicados cercanos -> queda pending -> admin aprueba -> se crea site -> Meilisearch reindexa -> Socket.io notifica
+Usuario sugiere sitio
+ -> Rolling busca direccion aprendida
+ -> si no existe consulta 4-72
+ -> guarda/aprende direccion oficial
+ -> PostGIS detecta duplicados cercanos
+ -> queda pending
+ -> admin aprueba
+ -> se crea site
+ -> Meilisearch reindexa
+ -> Socket.io notifica
 ```
 
 Endpoints:
@@ -195,34 +274,18 @@ GET /api/admin/dashboard?from=2026-01-01&to=2026-12-31&localidad=Chapinero&categ
 
 El panel permite exportar el reporte filtrado en JSON para auditoria, analisis externo o carga posterior a herramientas BI.
 
-La vista de usuarios permite filtrar por busqueda libre, rol, email verificado y nivel de identidad antes de cambiar permisos.
+## Compatibilidad OSM heredada
 
-## Ingesta de datos reales
-
-Para recopilar datos reales desde OpenStreetMap/Overpass:
+Los endpoints OSM existentes se mantienen temporalmente para no romper integraciones anteriores:
 
 ```text
-GET  /api/osm/geocode?q=Chapinero Bogota
-GET  /api/osm/nearby?lat=4.6486&lng=-74.0618&radius=700
+GET  /api/osm/geocode
+GET  /api/osm/nearby
 POST /api/osm/import-nearby
 ```
 
-`POST /api/osm/import-nearby` guarda resultados como `site_suggestions` en estado `pending`, para que entren por moderacion antes de publicarse. Esto evita contaminar el mapa con datos incompletos o duplicados.
-
-Ejemplo:
-
-```powershell
-$body = @{ lat = 4.6486; lng = -74.0618; radius = 700 } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri http://localhost:4000/api/osm/import-nearby -ContentType "application/json" -Body $body
-```
-
-Para cargar semilla real automaticamente (sugerencias en estado `pending`) durante el arranque del backend:
-
-```powershell
-$env:SEED_REAL_OSM="1"
-docker compose up -d postgres mongo redis meilisearch api
-```
+No forman parte del nuevo flujo autoritativo de resolucion de direcciones. La siguiente fase de limpieza puede retirarlos cuando se confirme que ningun consumidor externo depende de ellos.
 
 ## Nota sobre el mapa
 
-El mapa ya no reajusta bounds al seleccionar un pin; solo lo hace cuando cambia la lista de sitios por filtros. Esto evita que los puntos parezcan moverse al seleccionar. Si cambias de ciudades muy lejanas, el filtro sí reajusta el mapa para mostrar los resultados.
+El mapa usa tiles de OpenStreetMap, pero esto es independiente de la resolucion de direcciones. MapLibre puede continuar mostrando la cartografia OSM mientras las coordenadas y direcciones de Rolling provienen de la base propia aprendida y, cuando hace falta, de 4-72.
