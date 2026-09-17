@@ -1,0 +1,137 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/AuthContext';
+
+const steps = ['Identidad', 'Ubicación', 'Detalles', 'Revisión'];
+const categories = ['Café', 'Restaurante', 'Bar', 'Panadería', 'Tienda', 'Cultura', 'Salud', 'Belleza', 'Fitness', 'Turismo', 'Otro'];
+
+export default function RegisterPlacePage() {
+  const router = useRouter();
+  const { user, token } = useAuth();
+  const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [preview, setPreview] = useState(null);
+  const [form, setForm] = useState({ nombre: '', categoria: '', direccion: '', localidad: '', descripcion: '', contacto: '', latitud: '', longitud: '' });
+
+  const canContinue = useMemo(() => {
+    if (step === 0) return form.nombre.trim().length >= 3 && form.categoria;
+    if (step === 1) return form.direccion.trim().length >= 5 && form.latitud && form.longitud;
+    if (step === 2) return form.descripcion.trim().length >= 10;
+    return true;
+  }, [step, form]);
+
+  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  async function validateAddress() {
+    setLoading(true); setMessage('Validando dirección con Rolling / 4-72…');
+    try {
+      const response = await fetch('/api/site-suggestions/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ ...form, ciudad: 'Bogota', departamento: 'BOGOTA D.C.', divipola: '11001', descripcion: form.descripcion || 'Validación de ubicación para registro de local.' })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No fue posible validar la dirección');
+      setPreview(data);
+      const suggestion = data.suggestion || {};
+      if (!suggestion.latitud || !suggestion.longitud) throw new Error('No encontramos coordenadas precisas para esta dirección. Revisa la nomenclatura.');
+      setForm((current) => ({
+        ...current,
+        direccion: suggestion.direccion || current.direccion,
+        localidad: suggestion.localidad || current.localidad,
+        latitud: String(suggestion.latitud),
+        longitud: String(suggestion.longitud)
+      }));
+      setMessage(data.duplicates?.length ? 'Ubicación encontrada. Detectamos posibles duplicados para revisar.' : 'Dirección validada correctamente dentro de Bogotá.');
+    } catch (error) {
+      setPreview(null); setMessage(error.message);
+    }
+    setLoading(false);
+  }
+
+  async function submit() {
+    setLoading(true); setMessage('Enviando local a moderación…');
+    try {
+      const response = await fetch('/api/site-suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({
+          ...form,
+          ciudad: 'Bogota', departamento: 'BOGOTA D.C.', divipola: '11001',
+          suggested_by: user?.username,
+          latitud: Number(form.latitud), longitud: Number(form.longitud)
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No se pudo registrar el local');
+      setMessage('Local enviado correctamente. Quedó pendiente de moderación.');
+      setTimeout(() => router.push('/app'), 700);
+    } catch (error) { setMessage(error.message); }
+    setLoading(false);
+  }
+
+  return (
+    <main className="wizard-shell">
+      <section className="wizard-hero">
+        <span className="eyebrow">REGISTRO COMUNITARIO · BOGOTÁ</span>
+        <h1>Agrega un lugar a Rolling</h1>
+        <p>El registro se valida con la base propia de Rolling y, cuando hace falta, con 4-72. Por ahora sólo operamos dentro de Bogotá D.C.</p>
+      </section>
+
+      <section className="wizard-card glass-wizard">
+        <div className="stepper">
+          {steps.map((label, index) => (
+            <div className={`stepper-item ${index === step ? 'active' : ''} ${index < step ? 'done' : ''}`} key={label}>
+              <span>{index < step ? '✓' : index + 1}</span><small>{label}</small>
+            </div>
+          ))}
+        </div>
+
+        <div className="wizard-body">
+          {step === 0 && <>
+            <div className="wizard-heading"><span>01</span><div><h2>¿Qué lugar estás registrando?</h2><p>Empecemos por su identidad principal.</p></div></div>
+            <label>Nombre del local<input value={form.nombre} onChange={(e) => update('nombre', e.target.value)} placeholder="Ej. Café Aurora" /></label>
+            <label>Categoría<select value={form.categoria} onChange={(e) => update('categoria', e.target.value)}><option value="">Selecciona una categoría</option>{categories.map((c) => <option key={c}>{c}</option>)}</select></label>
+          </>}
+
+          {step === 1 && <>
+            <div className="wizard-heading"><span>02</span><div><h2>Ubícalo en Bogotá</h2><p>Validamos la nomenclatura y evitamos publicar puntos incorrectos.</p></div></div>
+            <label>Dirección<input value={form.direccion} onChange={(e) => { update('direccion', e.target.value); update('latitud', ''); update('longitud', ''); }} placeholder="Cra 7 # 72-41" /></label>
+            <label>Localidad <span className="optional">opcional</span><input value={form.localidad} onChange={(e) => update('localidad', e.target.value)} placeholder="Chapinero" /></label>
+            <button type="button" className="validate-button" onClick={validateAddress} disabled={loading || form.direccion.length < 5}>{loading ? 'Validando…' : 'Validar con 4-72'}</button>
+            {form.latitud && <div className="verified-location"><strong>✓ Ubicación verificada</strong><span>{form.direccion}</span><small>{form.latitud}, {form.longitud}</small></div>}
+            {preview?.duplicates?.length > 0 && <div className="duplicate-warning"><strong>Posibles duplicados</strong>{preview.duplicates.slice(0, 3).map((d) => <span key={d.id}>{d.nombre} · {d.distancia_metros} m</span>)}</div>}
+          </>}
+
+          {step === 2 && <>
+            <div className="wizard-heading"><span>03</span><div><h2>Cuéntanos qué lo hace especial</h2><p>Esta información ayuda a moderadores y futuros visitantes.</p></div></div>
+            <label>Descripción<textarea rows="6" value={form.descripcion} onChange={(e) => update('descripcion', e.target.value)} placeholder="¿Qué ofrece, qué ambiente tiene y por qué lo recomendarías?" /></label>
+            <label>Contacto o sitio web <span className="optional">opcional</span><input value={form.contacto} onChange={(e) => update('contacto', e.target.value)} placeholder="https://... o teléfono" /></label>
+          </>}
+
+          {step === 3 && <>
+            <div className="wizard-heading"><span>04</span><div><h2>Revisa antes de enviar</h2><p>El local no se publica inmediatamente: entra a moderación.</p></div></div>
+            <div className="review-sheet">
+              <div><small>LOCAL</small><strong>{form.nombre}</strong><span>{form.categoria}</span></div>
+              <div><small>UBICACIÓN</small><strong>{form.direccion}</strong><span>{form.localidad || 'Bogotá D.C.'}</span></div>
+              <div><small>DESCRIPCIÓN</small><p>{form.descripcion}</p></div>
+            </div>
+          </>}
+        </div>
+
+        {message && <div className="wizard-message">{message}</div>}
+        <footer className="wizard-footer">
+          <button type="button" className="soft-step" disabled={step === 0 || loading} onClick={() => setStep((s) => s - 1)}>Atrás</button>
+          {step < 3 ? <button type="button" className="next-step" disabled={!canContinue || loading} onClick={() => setStep((s) => s + 1)}>Continuar</button> : <button type="button" className="next-step" disabled={loading} onClick={submit}>{loading ? 'Enviando…' : 'Enviar a moderación'}</button>}
+        </footer>
+      </section>
+
+      <style jsx>{`
+        .wizard-shell{min-height:calc(100vh - 65px);padding:44px 20px 70px;background:radial-gradient(circle at 15% 15%,rgba(99,102,241,.13),transparent 30%),radial-gradient(circle at 85% 25%,rgba(14,165,233,.12),transparent 26%),linear-gradient(145deg,#eef2f5,#e5eaee)}.wizard-hero{max-width:790px;margin:0 auto 24px;text-align:center}.wizard-hero h1{font-size:clamp(2rem,5vw,3.4rem);margin:7px 0 12px;letter-spacing:-.04em}.wizard-hero p{max-width:650px;margin:0 auto;color:#64748b;line-height:1.6}.glass-wizard{max-width:820px;margin:auto;background:linear-gradient(145deg,rgba(255,255,255,.77),rgba(255,255,255,.48));border:1px solid rgba(255,255,255,.84);backdrop-filter:blur(28px) saturate(145%);box-shadow:0 28px 70px rgba(50,60,74,.14),inset 0 1px 0 #fff;border-radius:30px;overflow:hidden}.stepper{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:24px 28px 18px;border-bottom:1px solid rgba(148,163,184,.16)}.stepper-item{display:grid;justify-items:center;gap:7px;position:relative;color:#94a3b8}.stepper-item span{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#e8edf0;box-shadow:5px 5px 11px rgba(71,85,105,.15),-5px -5px 11px rgba(255,255,255,.95);font-weight:900}.stepper-item small{font-size:.68rem;font-weight:800}.stepper-item.active span{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;box-shadow:0 8px 18px rgba(99,102,241,.3)}.stepper-item.active small{color:#4f46e5}.stepper-item.done span{background:#dcfce7;color:#15803d}.wizard-body{padding:34px 42px 28px;display:grid;gap:18px;min-height:400px}.wizard-heading{display:flex;gap:14px;align-items:flex-start;margin-bottom:5px}.wizard-heading>span{font-size:.7rem;font-weight:900;letter-spacing:.1em;color:#6366f1;border:1px solid rgba(99,102,241,.2);background:rgba(238,242,255,.7);padding:7px 8px;border-radius:9px}.wizard-heading h2{margin:0 0 5px;font-size:1.5rem}.wizard-heading p{margin:0;color:#64748b}.wizard-body label{display:grid;gap:7px;color:#334155;font-size:.8rem;font-weight:800}.wizard-body input,.wizard-body select,.wizard-body textarea{border:0;outline:none;border-radius:15px;background:#edf1f3;padding:13px 15px;box-shadow:inset 5px 5px 12px rgba(71,85,105,.09),inset -5px -5px 12px rgba(255,255,255,.95);color:#1e293b;resize:vertical}.optional{font-weight:500;color:#94a3b8}.validate-button{justify-self:start;border-radius:14px;padding:12px 16px;background:rgba(255,255,255,.7);box-shadow:7px 7px 16px rgba(71,85,105,.13),-7px -7px 16px #fff;color:#4f46e5;font-weight:900}.validate-button:disabled{opacity:.45}.verified-location,.duplicate-warning{display:grid;gap:4px;border-radius:16px;padding:13px 15px;background:rgba(220,252,231,.7);border:1px solid rgba(34,197,94,.16);color:#166534}.verified-location span,.duplicate-warning span{font-size:.8rem}.verified-location small{opacity:.7}.duplicate-warning{background:rgba(254,243,199,.7);border-color:rgba(245,158,11,.2);color:#92400e}.review-sheet{display:grid;gap:12px}.review-sheet>div{display:grid;gap:4px;padding:15px 17px;border-radius:17px;background:rgba(255,255,255,.55);box-shadow:0 9px 22px rgba(51,65,85,.07),inset 0 1px 0 #fff}.review-sheet small{font-size:.62rem;letter-spacing:.12em;color:#6366f1;font-weight:900}.review-sheet span,.review-sheet p{color:#64748b;margin:0}.wizard-message{margin:0 42px 18px;border-radius:13px;padding:11px 14px;background:rgba(238,242,255,.75);color:#4338ca;font-size:.8rem;font-weight:700}.wizard-footer{display:flex;justify-content:space-between;padding:20px 42px 28px;border-top:1px solid rgba(148,163,184,.14)}.soft-step,.next-step{padding:12px 20px;border-radius:14px;font-weight:900}.soft-step{background:#e9eef1;box-shadow:6px 6px 14px rgba(71,85,105,.12),-6px -6px 14px #fff}.next-step{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 10px 23px rgba(79,70,229,.25)}button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:650px){.wizard-shell{padding:25px 10px}.stepper{padding:18px 10px}.stepper-item small{display:none}.wizard-body{padding:25px 20px}.wizard-footer{padding:18px 20px}.wizard-message{margin:0 20px 15px}}
+      `}</style>
+    </main>
+  );
+}
