@@ -16,6 +16,7 @@ export async function initPostgres() {
   await query('CREATE EXTENSION IF NOT EXISTS postgis');
   await query('CREATE EXTENSION IF NOT EXISTS pg_trgm');
   await query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
+  await query('CREATE EXTENSION IF NOT EXISTS unaccent');
 
   await query(`
     CREATE TABLE IF NOT EXISTS users (

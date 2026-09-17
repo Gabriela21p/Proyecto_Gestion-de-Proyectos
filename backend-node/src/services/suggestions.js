@@ -19,7 +19,7 @@ export async function listSiteSuggestions({ status = 'pending', limit = 80 } = {
       LEFT JOIN sites duplicate ON duplicate.id = ss.duplicate_site_id
       LEFT JOIN sites approved ON approved.id = ss.approved_site_id
       WHERE ($1 = 'all' OR ss.status = $1)
-        AND (ss.divipola = '11001' OR lower(unaccent(COALESCE(ss.city, ''))) LIKE '%bogota%')
+        AND (ss.divipola = '11001' OR lower(COALESCE(ss.city, '')) LIKE 'bogot%')
       ORDER BY ss.created_at DESC
       LIMIT $2
     `,
@@ -142,7 +142,7 @@ export async function findNearbyDuplicates({ name, lat, lng, radius = DUPLICATE_
       FROM sites s
       LEFT JOIN neighborhoods n ON n.id = s.neighborhood_id
       WHERE s.status = 'approved'
-        AND lower(unaccent(COALESCE(n.city, ''))) LIKE '%bogota%'
+        AND lower(COALESCE(n.city, '')) LIKE 'bogot%'
         AND ST_DWithin(s.location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $4)
       ORDER BY name_similarity DESC, distance_meters ASC
       LIMIT 8
