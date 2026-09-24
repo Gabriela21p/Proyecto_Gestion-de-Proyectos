@@ -1,16 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { apiRequest, buildQuery } from '../api';
 import { colors, shadow } from '../theme';
 import { BrandHeader, Button, Field, Notice, Pill } from '../components/Primitives';
-
-const BOGOTA = { latitude: 4.6486, longitude: -74.0721, latitudeDelta: 0.18, longitudeDelta: 0.18 };
+import OsmMap from '../components/OsmMap';
 
 // Explorar mantiene sincronizados mapa, lista y búsqueda de direcciones. Un
 // punto consultado se trata aparte hasta que la persona decida registrarlo.
 export default function ExploreScreen({ session, onOpenPlace, onRegister }) {
-  const map = useRef(null);
   const [sites, setSites] = useState([]);
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState('');
@@ -38,13 +35,6 @@ export default function ExploreScreen({ session, onOpenPlace, onRegister }) {
     finally { setLoading(false); }
   }
 
-  useEffect(() => {
-    // Seleccionar un sitio o resolver una dirección centra el mapa sin saltos.
-    const point = location || selected;
-    if (!point?.latitud || !point?.longitud) return;
-    map.current?.animateToRegion({ latitude: Number(point.latitud), longitude: Number(point.longitud), latitudeDelta: location ? 0.012 : 0.045, longitudeDelta: location ? 0.012 : 0.045 }, 500);
-  }, [selected, location]);
-
   async function locateAddress() {
     // Esta consulta es sólo una vista previa: todavía no crea una sugerencia.
     if (query.trim().length < 5) return setError('Escribe una dirección más completa.');
@@ -62,7 +52,7 @@ export default function ExploreScreen({ session, onOpenPlace, onRegister }) {
     finally { setLocating(false); }
   }
 
-  const visibleSites = useMemo(() => sites.filter((site) => Number.isFinite(Number(site.latitud)) && Number.isFinite(Number(site.longitud))), [sites]);
+  const visibleSites = sites.filter((site) => Number.isFinite(Number(site.latitud)) && Number.isFinite(Number(site.longitud)));
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -75,25 +65,8 @@ export default function ExploreScreen({ session, onOpenPlace, onRegister }) {
       </View>
 
       <View style={styles.mapWrap}>
-        <MapView
-          ref={map}
-          style={styles.map}
-          initialRegion={BOGOTA}
-          toolbarEnabled={false}
-          mapType={Platform.OS === 'android' ? 'none' : 'standard'}
-        >
-          {/* La app y la web comparten la misma cartografía abierta. En Android
-              quitamos el mapa base para que sólo se vean las teselas de OSM. */}
-          <UrlTile
-            urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maximumZ={19}
-            flipY={false}
-          />
-          {visibleSites.map((site) => <Marker key={site.id} coordinate={{ latitude: Number(site.latitud), longitude: Number(site.longitud) }} pinColor={selected?.id === site.id ? colors.coral : colors.green} title={site.nombre} description={site.categoria} onPress={() => { setLocation(null); setSelected(site); }} />)}
-          {location && <Marker coordinate={{ latitude: location.latitud, longitude: location.longitud }} pinColor={colors.coral} title="Dirección encontrada" description={location.direccion} />}
-        </MapView>
+        <OsmMap sites={visibleSites} selected={selected} location={location} onSelectSite={(id) => { setLocation(null); setSelected(sites.find((site) => site.id === id) || null); }} />
         <View style={styles.mapBadge}><Text style={styles.mapBadgeDot}>●</Text><Text style={styles.mapBadgeText}>{sites.length} lugares en comunidad</Text></View>
-        <View style={styles.attribution}><Text style={styles.attributionText}>© OpenStreetMap contributors</Text></View>
       </View>
 
       {location && (
@@ -134,10 +107,9 @@ const styles = StyleSheet.create({
   count: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.green }, countText: { color: colors.white, fontWeight: '900' },
   searchCard: { gap: 10, marginHorizontal: 20, padding: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.white, ...shadow },
   chips: { flexDirection: 'row', gap: 8 },
-  mapWrap: { height: 310, marginTop: 18, overflow: 'hidden', backgroundColor: '#dce5dc' }, map: { flex: 1 },
+  mapWrap: { height: 310, marginTop: 18, overflow: 'hidden', backgroundColor: '#dce5dc' },
   mapBadge: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 7, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: '#fffffff2', ...shadow },
   mapBadgeDot: { color: colors.green }, mapBadgeText: { color: colors.ink, fontSize: 11, fontWeight: '800' },
-  attribution: { position: 'absolute', right: 5, bottom: 4, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 3, backgroundColor: '#ffffffd9' }, attributionText: { color: '#44504a', fontSize: 8 },
   confirmCard: { gap: 11, margin: 16, marginBottom: 0, borderRadius: 19, padding: 18, backgroundColor: colors.white, ...shadow },
   kicker: { color: colors.coral, fontSize: 9, fontWeight: '900', letterSpacing: 1 }, confirmTitle: { color: colors.ink, fontFamily: 'serif', fontSize: 25, fontWeight: '700' }, confirmCopy: { color: colors.muted },
   newPlace: { borderRadius: 10, padding: 11, color: colors.green, backgroundColor: colors.greenSoft, fontSize: 12, fontWeight: '700' },

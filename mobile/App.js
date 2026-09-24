@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StatusBar, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { apiRequest } from './src/api';
 import { colors } from './src/theme';
@@ -16,6 +17,10 @@ const SESSION_KEY = 'rolling.session';
 // App mantiene una navegación pequeña a propósito. Para estas cuatro pantallas
 // no necesitamos sumar un router nativo ni otra capa de estado global.
 export default function App() {
+  return <SafeAreaProvider><RollingApp /></SafeAreaProvider>;
+}
+
+function RollingApp() {
   const [session, setSession] = useState(null);
   const [booting, setBooting] = useState(true);
   const [route, setRoute] = useState({ name: 'explore', params: {} });
