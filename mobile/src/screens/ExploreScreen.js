@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import { apiRequest, buildQuery } from '../api';
 import { colors, shadow } from '../theme';
 import { BrandHeader, Button, Field, Notice, Pill } from '../components/Primitives';
@@ -75,11 +75,25 @@ export default function ExploreScreen({ session, onOpenPlace, onRegister }) {
       </View>
 
       <View style={styles.mapWrap}>
-        <MapView ref={map} style={styles.map} initialRegion={BOGOTA} toolbarEnabled={false}>
+        <MapView
+          ref={map}
+          style={styles.map}
+          initialRegion={BOGOTA}
+          toolbarEnabled={false}
+          mapType={Platform.OS === 'android' ? 'none' : 'standard'}
+        >
+          {/* La app y la web comparten la misma cartografía abierta. En Android
+              quitamos el mapa base para que sólo se vean las teselas de OSM. */}
+          <UrlTile
+            urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maximumZ={19}
+            flipY={false}
+          />
           {visibleSites.map((site) => <Marker key={site.id} coordinate={{ latitude: Number(site.latitud), longitude: Number(site.longitud) }} pinColor={selected?.id === site.id ? colors.coral : colors.green} title={site.nombre} description={site.categoria} onPress={() => { setLocation(null); setSelected(site); }} />)}
           {location && <Marker coordinate={{ latitude: location.latitud, longitude: location.longitud }} pinColor={colors.coral} title="Dirección encontrada" description={location.direccion} />}
         </MapView>
         <View style={styles.mapBadge}><Text style={styles.mapBadgeDot}>●</Text><Text style={styles.mapBadgeText}>{sites.length} lugares en comunidad</Text></View>
+        <View style={styles.attribution}><Text style={styles.attributionText}>© OpenStreetMap contributors</Text></View>
       </View>
 
       {location && (
@@ -123,6 +137,7 @@ const styles = StyleSheet.create({
   mapWrap: { height: 310, marginTop: 18, overflow: 'hidden', backgroundColor: '#dce5dc' }, map: { flex: 1 },
   mapBadge: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 7, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: '#fffffff2', ...shadow },
   mapBadgeDot: { color: colors.green }, mapBadgeText: { color: colors.ink, fontSize: 11, fontWeight: '800' },
+  attribution: { position: 'absolute', right: 5, bottom: 4, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 3, backgroundColor: '#ffffffd9' }, attributionText: { color: '#44504a', fontSize: 8 },
   confirmCard: { gap: 11, margin: 16, marginBottom: 0, borderRadius: 19, padding: 18, backgroundColor: colors.white, ...shadow },
   kicker: { color: colors.coral, fontSize: 9, fontWeight: '900', letterSpacing: 1 }, confirmTitle: { color: colors.ink, fontFamily: 'serif', fontSize: 25, fontWeight: '700' }, confirmCopy: { color: colors.muted },
   newPlace: { borderRadius: 10, padding: 11, color: colors.green, backgroundColor: colors.greenSoft, fontSize: 12, fontWeight: '700' },
