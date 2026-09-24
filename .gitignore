@@ -5,6 +5,7 @@ node_modules/
 **/.next/
 .cache/
 dist/
+dist-check/
 build/
 coverage/
 

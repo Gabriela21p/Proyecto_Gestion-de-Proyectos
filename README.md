@@ -5,7 +5,7 @@ Rolling es una app comunitaria para descubrir sitios destacables por localidad, 
 ## Arquitectura implementada
 
 - Cliente web: Next.js + MapLibre GL JS.
-- Cliente movil: Expo / React Native base en `mobile/`.
+- Cliente movil: Expo / React Native con autenticacion, exploracion, mapa, busqueda de direcciones, registro de lugares y reviews.
 - Backend/API: Node.js + Fastify con REST y GraphQL.
 - Tiempo real: Socket.io.
 - Jobs y notificaciones: Redis + BullMQ.
@@ -161,18 +161,45 @@ El proxy de Next envia `/api/*` a `http://localhost:4000`.
 
 ## Levantar app movil
 
+La app usa Expo SDK 57 y Node.js 22.13 o superior. Comparte usuarios, lugares, direcciones y reviews con la web.
+
 ```powershell
 cd mobile
 npm install
-npm run start
 ```
 
-Si pruebas en celular fisico, cambia `EXPO_PUBLIC_API_URL` por la IP local de tu PC:
+Para Android Emulator, el valor predeterminado `http://10.0.2.2:4000` apunta al computador anfitrion:
 
 ```powershell
-$env:EXPO_PUBLIC_API_URL="http://TU_IP_LOCAL:4000"
 npm run start
 ```
+
+Para un celular fisico, copia `mobile/.env.example` como `mobile/.env` y cambia la IP por la IPv4 local de tu computador:
+
+```text
+EXPO_PUBLIC_API_URL=http://TU_IP_LOCAL:4000
+```
+
+Despues inicia Expo en modo LAN y escanea el QR con Expo Go:
+
+```powershell
+npm run start
+```
+
+El celular y el computador deben estar conectados a la misma red Wi-Fi, Docker debe estar encendido y el firewall debe permitir el puerto `4000`.
+
+### Generar APK de prueba local
+
+Con Android Studio, Android SDK y JDK instalados:
+
+```powershell
+cd mobile
+npx expo prebuild --platform android
+cd android
+.\gradlew.bat assembleDebug
+```
+
+La APK queda en `mobile/android/app/build/outputs/apk/debug/app-debug.apk`. Esta compilacion no necesita contratar hosting; durante las pruebas la API sigue ejecutandose en el computador indicado por `EXPO_PUBLIC_API_URL`.
 
 ## Configuracion 4-72
 

@@ -1,73 +1,90 @@
 import { useEffect, useState } from 'react';
-import { FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import { StatusBar } from 'expo-status-bar';
+import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+import { apiRequest } from './src/api';
+import { colors } from './src/theme';
+import AuthScreen from './src/screens/AuthScreen';
+import ExploreScreen from './src/screens/ExploreScreen';
+import PlaceScreen from './src/screens/PlaceScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import TabBar from './src/components/TabBar';
+
+const SESSION_KEY = 'rolling.session';
 
 export default function App() {
-  const [sites, setSites] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const [session, setSession] = useState(null);
+  const [booting, setBooting] = useState(true);
+  const [route, setRoute] = useState({ name: 'explore', params: {} });
 
-  useEffect(() => {
-    fetch(`${API_URL}/api/sites`)
-      .then((response) => response.json())
-      .then((data) => {
-        setSites(data);
-        setSelected(data[0] || null);
-      })
-      .catch(() => {});
-  }, []);
+  useEffect(() => { restoreSession(); }, []);
+
+  async function restoreSession() {
+    try {
+      const saved = await AsyncStorage.getItem(SESSION_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      const result = await apiRequest('/api/auth/me', { token: parsed.token });
+      setSession({ token: parsed.token, user: result.user });
+    } catch {
+      await AsyncStorage.removeItem(SESSION_KEY);
+    } finally {
+      setBooting(false);
+    }
+  }
+
+  async function acceptSession(nextSession) {
+    setSession(nextSession);
+    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
+  }
+
+  async function logout() {
+    await AsyncStorage.removeItem(SESSION_KEY);
+    setSession(null);
+    setRoute({ name: 'explore', params: {} });
+  }
+
+  function navigate(name, params = {}) { setRoute({ name, params }); }
+
+  if (booting) {
+    return (
+      <SafeAreaView style={styles.loading}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.paper} />
+        <View style={styles.loadingMark}><Text style={styles.loadingLetter}>R</Text></View>
+        <ActivityIndicator color={colors.green} />
+        <Text style={styles.loadingText}>Preparando Rolling...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!session) return <AuthScreen onAuthenticated={acceptSession} />;
+
+  let content;
+  if (route.name === 'place') {
+    content = <PlaceScreen siteId={route.params.siteId} session={session} onBack={() => navigate('explore')} />;
+  } else if (route.name === 'register') {
+    content = <RegisterScreen session={session} initialLocation={route.params.location} onDone={() => navigate('explore')} />;
+  } else if (route.name === 'profile') {
+    content = <ProfileScreen session={session} onLogout={logout} />;
+  } else {
+    content = <ExploreScreen session={session} onOpenPlace={(siteId) => navigate('place', { siteId })} onRegister={(location) => navigate('register', { location })} />;
+  }
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar style="dark" />
-      <View style={styles.header}>
-        <Text style={styles.brand}>Rolling</Text>
-        <Text style={styles.copy}>Sitios buenos elegidos por la comunidad</Text>
-      </View>
-      <MapView
-        style={styles.map}
-        initialRegion={{
-          latitude: selected?.latitud || 4.6486,
-          longitude: selected?.longitud || -74.0618,
-          latitudeDelta: 0.08,
-          longitudeDelta: 0.08,
-        }}
-      >
-        {sites.map((site) => (
-          <Marker
-            key={site.id}
-            coordinate={{ latitude: site.latitud, longitude: site.longitud }}
-            title={site.nombre}
-            description={`${site.rating_promedio} · ${site.categoria}`}
-            onPress={() => setSelected(site)}
-          />
-        ))}
-      </MapView>
-      <FlatList
-        style={styles.list}
-        data={sites}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.card, selected?.id === item.id && styles.cardActive]}>
-            <Text style={styles.title}>{item.nombre}</Text>
-            <Text style={styles.copy}>{item.barrio?.localidad} · {item.rating_promedio} · {item.total_reviews} reviews</Text>
-          </View>
-        )}
-      />
+    <SafeAreaView style={styles.app}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.paper} />
+      <View style={styles.content}>{content}</View>
+      {route.name !== 'place' && <TabBar active={route.name} onNavigate={navigate} />}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f4f1ea' },
-  header: { padding: 18, gap: 4 },
-  brand: { fontSize: 28, fontWeight: '800', color: '#17202a' },
-  copy: { color: '#667085' },
-  map: { height: 360 },
-  list: { padding: 14 },
-  card: { padding: 14, marginBottom: 10, borderRadius: 8, backgroundColor: '#fff' },
-  cardActive: { borderWidth: 2, borderColor: '#2667ff' },
-  title: { fontWeight: '800', color: '#17202a', marginBottom: 4 },
+  app: { flex: 1, backgroundColor: colors.paper },
+  content: { flex: 1 },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, backgroundColor: colors.paper },
+  loadingMark: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center', borderRadius: 29, backgroundColor: colors.lime },
+  loadingLetter: { color: colors.ink, fontFamily: 'serif', fontSize: 28, fontWeight: '900' },
+  loadingText: { color: colors.muted, fontWeight: '700' },
 });
