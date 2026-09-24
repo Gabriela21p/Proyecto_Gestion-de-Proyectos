@@ -3,6 +3,8 @@ node_modules/
 
 .next/
 **/.next/
+.expo/
+**/.expo/
 .cache/
 dist/
 dist-check/
