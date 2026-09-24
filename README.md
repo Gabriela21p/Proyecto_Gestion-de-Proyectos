@@ -190,6 +190,14 @@ npm run start
 
 El celular y el computador deben estar conectados a la misma red Wi-Fi, Docker debe estar encendido y el firewall debe permitir el puerto `4000`.
 
+Si Expo Go muestra `Cannot connect to Expo CLI` o Windows bloquea el puerto de Metro, inicia el proyecto mediante túnel:
+
+```powershell
+npm run start:tunnel
+```
+
+El túnel resuelve la conexión con Expo CLI; la API continúa usando la dirección configurada en `EXPO_PUBLIC_API_URL`.
+
 ### Generar APK de prueba local
 
 Con Android Studio, Android SDK y JDK instalados:
