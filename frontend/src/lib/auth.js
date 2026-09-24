@@ -3,6 +3,8 @@ const TOKEN_COOKIE_NAME = 'rolling_token';
 const TOKEN_STORAGE_KEY = 'rolling_token';
 const USER_STORAGE_KEY = 'rolling_user';
 
+// Mantenemos una cookie corta para el middleware y localStorage para hidratar
+// el cliente sin pedirle al usuario que inicie sesión en cada recarga.
 function setSessionCookie(token) {
   if (typeof document === 'undefined') return;
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
@@ -15,6 +17,7 @@ function clearSessionCookie() {
 }
 
 export async function registerAccount(username, email, password) {
+  // Todas las llamadas pasan por /api para aprovechar el proxy de Next.
   const response = await fetch(`${API_BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -71,6 +74,7 @@ export async function getCurrentUser(token) {
 }
 
 export function saveSession(token, user) {
+  // Guardamos token y usuario juntos; una sesión a medias se considera inválida.
   localStorage.setItem(TOKEN_STORAGE_KEY, token);
   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
   setSessionCookie(token);

@@ -1,5 +1,6 @@
 @import "maplibre-gl/dist/maplibre-gl.css";
 
+/* Base visual de Rolling: colores cálidos, tinta oscura y acentos comunitarios. */
 :root {
   --ink: #17202a;
   --muted: #667085;
@@ -58,6 +59,7 @@ p {
   min-height: 100vh;
 }
 
+/* Experiencia original de mapa y panel lateral. Se conserva para rutas heredadas. */
 .map-experience {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 430px;
@@ -195,6 +197,7 @@ p {
 }
 
 .real-map-marker {
+  /* El botón completo amplía el área táctil sin agrandar visualmente el pin. */
   position: relative;
   display: grid;
   width: 54px;
@@ -304,6 +307,7 @@ p {
   border-radius: 0;
 }
 
+/* Formularios, tarjetas y estados compartidos por las pantallas públicas. */
 .panel-header h1 {
   margin: 14px 0;
   font-size: clamp(2.1rem, 5vw, 3.8rem);
@@ -607,6 +611,7 @@ textarea {
 }
 
 .architecture-band {
+  /* Esta sección explica la arquitectura dentro de la demo, no es navegación. */
   padding: 48px 32px 64px;
   color: #edf4ff;
   background: #151515;
@@ -706,6 +711,7 @@ textarea {
 }
 
 .auth-page {
+  /* En escritorio el mapa ambienta el acceso; en móvil el formulario manda. */
   position: relative;
   display: grid;
   min-height: 100vh;
@@ -909,6 +915,7 @@ textarea {
 }
 
 .admin-page {
+  /* El panel usa una densidad mayor porque está pensado para operación interna. */
   min-height: 100vh;
   padding: 36px 32px 56px;
   background: #fffaf0;
@@ -1381,6 +1388,7 @@ textarea {
 }
 
 @media (max-width: 1100px) {
+  /* Primer quiebre: apilamos superficies antes de reducir controles. */
   .map-experience,
   .content-grid,
   .forms-grid {
@@ -1421,6 +1429,7 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  /* En teléfonos priorizamos lectura, toque cómodo y desplazamiento vertical. */
   .map-brand,
   .map-stats {
     left: 16px;

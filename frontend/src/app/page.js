@@ -9,6 +9,8 @@ export default function Page() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
+    // La portada sólo funciona como puerta de entrada: enviamos al usuario al
+    // destino correcto cuando termina de restaurarse la sesión.
     if (!loading) {
       if (user) {
         router.push('/app');

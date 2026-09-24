@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/AuthContext';
 const steps = ['Identidad', 'Ubicación', 'Detalles', 'Revisión'];
 const categories = ['Café', 'Restaurante', 'Bar', 'Panadería', 'Tienda', 'Cultura', 'Salud', 'Belleza', 'Fitness', 'Turismo', 'Otro'];
 
+// El registro se divide en pasos cortos: identidad, ubicación, contexto y una
+// revisión final antes de enviar la sugerencia a moderación.
 export default function RegisterPlacePage() {
   const router = useRouter();
   const { user, token } = useAuth();
@@ -17,6 +19,8 @@ export default function RegisterPlacePage() {
   const [form, setForm] = useState({ nombre: '', categoria: '', direccion: '', localidad: '', descripcion: '', contacto: '', latitud: '', longitud: '' });
 
   useEffect(() => {
+    // Si venimos desde el mapa, reutilizamos la dirección ya resuelta para no
+    // obligar a la persona a repetir la búsqueda.
     const searchParams = new URLSearchParams(window.location.search);
     const direccion = searchParams.get('direccion') || '';
     const latitud = searchParams.get('latitud') || '';
@@ -33,6 +37,7 @@ export default function RegisterPlacePage() {
   }, []);
 
   const canContinue = useMemo(() => {
+    // Cada paso valida únicamente los campos que la persona ya puede ver.
     if (step === 0) return form.nombre.trim().length >= 3 && form.categoria;
     if (step === 1) return form.direccion.trim().length >= 5 && form.latitud && form.longitud;
     if (step === 2) return form.descripcion.trim().length >= 10;
@@ -42,6 +47,7 @@ export default function RegisterPlacePage() {
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
 
   async function validateAddress() {
+    // Preview normaliza la nomenclatura y busca duplicados sin guardar nada.
     setLoading(true); setMessage('Validando dirección con Rolling / 4-72…');
     try {
       const response = await fetch('/api/site-suggestions/preview', {
@@ -69,6 +75,7 @@ export default function RegisterPlacePage() {
   }
 
   async function submit() {
+    // El lugar entra como sugerencia pendiente; moderación decide su publicación.
     setLoading(true); setMessage('Enviando local a moderación…');
     try {
       const response = await fetch('/api/site-suggestions', {

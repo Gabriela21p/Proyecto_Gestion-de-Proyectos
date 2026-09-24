@@ -6,16 +6,22 @@ import { installPostal472FetchInterceptor } from './postal472FetchInterceptor';
 
 const AuthContext = createContext(null);
 
+// Este proveedor es la única fuente de verdad de autenticación para la web.
+// Así las páginas no tienen que repetir la lógica de restaurar y validar sesión.
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Se instala una sola vez: permite intentar 4-72 desde el dispositivo antes
+    // de usar el fallback local-first del backend.
     installPostal472FetchInterceptor();
     let isMounted = true;
 
     async function initSession() {
+      // Mostramos la sesión guardada de inmediato, pero confirmamos el token con
+      // la API para no conservar credenciales vencidas.
       const { token: savedToken, user: savedUser } = getSession();
       if (savedToken && savedUser) {
         if (!isMounted) return;

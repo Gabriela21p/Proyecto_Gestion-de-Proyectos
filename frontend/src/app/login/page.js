@@ -15,10 +15,13 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    // Evita que una persona ya autenticada vuelva a ver el formulario.
     if (!loading && user) router.replace('/app');
   }, [user, loading, router]);
 
   async function handleSubmit(event) {
+    // Login y registro comparten el formulario para mantener el acceso simple
+    // en pantallas pequeñas.
     event.preventDefault();
     setError('');
     setIsSubmitting(true);

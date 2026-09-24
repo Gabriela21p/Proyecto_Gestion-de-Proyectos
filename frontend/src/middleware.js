@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+// Esta es una primera barrera de navegación. La API vuelve a validar el JWT
+// antes de cualquier operación sensible, así que aquí sólo cuidamos la UX.
 export function middleware(request) {
   const { pathname } = request.nextUrl;
 
@@ -8,6 +10,8 @@ export function middleware(request) {
   }
 
   if (pathname.startsWith('/app')) {
+    // La cookie existe para que el middleware pueda decidir antes de renderizar.
+    // Los datos completos de la sesión se administran en AuthContext.
     const token = request.cookies.get('rolling_token')?.value;
 
     if (!token) {

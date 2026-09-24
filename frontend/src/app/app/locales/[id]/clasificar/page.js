@@ -14,6 +14,8 @@ const ratings = [
   { value: 5, label: 'Excelente', hint: 'Imperdible' }
 ];
 
+// Separamos puntuación, relato y confirmación para que reseñar sea una tarea
+// corta en móvil, aunque al final se envía un único aporte.
 export default function ClassifyPlacePage() {
   const { id } = useParams();
   const router = useRouter();
@@ -29,12 +31,14 @@ export default function ClassifyPlacePage() {
   }, [id]);
 
   const canContinue = useMemo(() => {
+    // Esta longitud coincide con la regla del backend y evita una ida innecesaria.
     if (step === 0) return Number(form.rating) >= 1;
     if (step === 1) return form.comentario.trim().length >= 12;
     return true;
   }, [step, form]);
 
   async function submit() {
+    // La API asocia el aporte con la sesión y recalcula el Rolling Score.
     setLoading(true);
     setMessage('Publicando tu reseña…');
     try {

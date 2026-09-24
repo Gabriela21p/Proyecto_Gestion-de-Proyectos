@@ -7,6 +7,8 @@ const tabs = [
   { key: 'profile', icon: 'R', label: 'Mi cuenta' },
 ];
 
+// La barra sólo contiene destinos de primer nivel. Las fichas se abren encima y
+// conservan su propio botón de regreso.
 export default function TabBar({ active, onNavigate }) {
   return (
     <View style={styles.bar}>

@@ -4,6 +4,9 @@ const ENTRY_URL = 'https://visor.codigopostal.gov.co/RestService472/CodigoPostal
 let cachedToken = '';
 let tokenExpiresAt = 0;
 
+// El token del visor es temporal. Reutilizarlo evita una segunda petición en
+// cada búsqueda y reduce la presión sobre el servicio oficial.
+
 /**
  * Intenta resolver una direccion directamente desde el dispositivo del usuario.
  * En navegadores la politica CORS del proveedor puede impedir la llamada; en ese

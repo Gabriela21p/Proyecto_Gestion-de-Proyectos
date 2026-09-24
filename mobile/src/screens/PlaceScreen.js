@@ -6,6 +6,8 @@ import { Button, Field, Notice, Pill } from '../components/Primitives';
 
 const ratingLabels = ['Muy mala', 'Mala', 'Bien', 'Muy buena', 'Excelente'];
 
+// La ficha concentra datos y reseñas para que la persona no pierda el contexto
+// del lugar mientras escribe su aporte.
 export default function PlaceScreen({ siteId, session, onBack }) {
   const [site, setSite] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,6 +23,7 @@ export default function PlaceScreen({ siteId, session, onBack }) {
   useEffect(() => { load(); }, [siteId]);
 
   async function load() {
+    // Recargamos la ficha después de reseñar para mostrar el score actualizado.
     setLoading(true);
     try { setSite(await apiRequest(`/api/sites/${siteId}`)); }
     catch (err) { setMessage(err.message); setError(true); }
@@ -28,6 +31,7 @@ export default function PlaceScreen({ siteId, session, onBack }) {
   }
 
   async function submitReview() {
+    // La confirmación de visita es voluntaria; nunca la marcamos por la persona.
     if (comment.trim().length < 12) { setError(true); setMessage('La experiencia debe tener mínimo 12 caracteres.'); return; }
     setSubmitting(true); setError(false); setMessage('Publicando tu reseña...');
     try {

@@ -4,6 +4,8 @@ import { apiRequest } from '../api';
 import { colors, shadow } from '../theme';
 import { Button, Field, Notice } from '../components/Primitives';
 
+// Acceso y registro comparten contexto y campos, por eso viven en una misma
+// pantalla en lugar de obligar a navegar entre dos formularios casi iguales.
 export default function AuthScreen({ onAuthenticated }) {
   const [registering, setRegistering] = useState(false);
   const [username, setUsername] = useState('');
@@ -13,6 +15,8 @@ export default function AuthScreen({ onAuthenticated }) {
   const [error, setError] = useState('');
 
   async function submit() {
+    // Validamos lo básico aquí para responder rápido; la API conserva las reglas
+    // definitivas de identidad y seguridad.
     setError('');
     if (registering && username.trim().length < 2) return setError('Escribe un nombre de usuario.');
     if (!email.includes('@') || password.length < 8) return setError('Revisa el correo y usa una contraseña de mínimo 8 caracteres.');

@@ -8,6 +8,8 @@ export const metadata = {
   description: 'Descubre, registra y clasifica lugares destacados de Bogotá.',
 };
 
+// El layout raíz carga estilos compartidos y deja la sesión disponible para
+// cualquier ruta, incluida la pantalla de acceso.
 export default function RootLayout({ children }) {
   return (
     <html lang="es">

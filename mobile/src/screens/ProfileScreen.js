@@ -3,6 +3,8 @@ import { API_URL } from '../api';
 import { colors, shadow } from '../theme';
 import { BrandHeader, Button, Pill } from '../components/Primitives';
 
+// Además de la identidad mostramos la URL de la API porque durante las pruebas
+// locales es el dato más útil para diagnosticar una conexión desde el celular.
 export default function ProfileScreen({ session, onLogout }) {
   const user = session.user || {};
   return (

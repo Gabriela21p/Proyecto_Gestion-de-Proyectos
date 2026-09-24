@@ -7,6 +7,8 @@ import { BrandHeader, Button, Field, Notice, Pill } from '../components/Primitiv
 
 const BOGOTA = { latitude: 4.6486, longitude: -74.0721, latitudeDelta: 0.18, longitudeDelta: 0.18 };
 
+// Explorar mantiene sincronizados mapa, lista y búsqueda de direcciones. Un
+// punto consultado se trata aparte hasta que la persona decida registrarlo.
 export default function ExploreScreen({ session, onOpenPlace, onRegister }) {
   const map = useRef(null);
   const [sites, setSites] = useState([]);
@@ -20,11 +22,13 @@ export default function ExploreScreen({ session, onOpenPlace, onRegister }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Un pequeño debounce evita pedir resultados por cada pulsación rápida.
     const timeout = setTimeout(loadSites, 260);
     return () => clearTimeout(timeout);
   }, [query, minRating, events]);
 
   async function loadSites() {
+    // El backend ordena y filtra; el móvil se concentra en presentar el resultado.
     setLoading(true);
     try {
       const data = await apiRequest(`/api/sites${buildQuery({ q: query, min_rating: minRating ? 4 : '', has_events: events, sort: 'recommended' })}`);
@@ -35,12 +39,14 @@ export default function ExploreScreen({ session, onOpenPlace, onRegister }) {
   }
 
   useEffect(() => {
+    // Seleccionar un sitio o resolver una dirección centra el mapa sin saltos.
     const point = location || selected;
     if (!point?.latitud || !point?.longitud) return;
     map.current?.animateToRegion({ latitude: Number(point.latitud), longitude: Number(point.longitud), latitudeDelta: location ? 0.012 : 0.045, longitudeDelta: location ? 0.012 : 0.045 }, 500);
   }, [selected, location]);
 
   async function locateAddress() {
+    // Esta consulta es sólo una vista previa: todavía no crea una sugerencia.
     if (query.trim().length < 5) return setError('Escribe una dirección más completa.');
     setLocating(true); setError(''); setLocation(null);
     try {

@@ -5,6 +5,8 @@ import { useAuth } from '@/lib/AuthContext';
 
 const roles = ['neighbor', 'moderator', 'admin'];
 
+// El panel reúne operación y reportería. Ocultar botones mejora la experiencia,
+// pero la API vuelve a comprobar el rol en cada acción protegida.
 export default function AdminPage() {
   const { user, token } = useAuth();
   const [activeView, setActiveView] = useState('dashboard');
@@ -20,6 +22,7 @@ export default function AdminPage() {
   const canManageUsers = user?.role === 'admin';
 
   useEffect(() => {
+    // Sólo cargamos la pestaña visible para no hacer consultas que aún no hacen falta.
     if (!canModerate || !token) return;
     if (activeView === 'dashboard') loadDashboard();
     if (activeView === 'sites') loadSuggestions();
@@ -27,6 +30,7 @@ export default function AdminPage() {
   }, [activeView, canModerate, canManageUsers, token, suggestionStatus]);
 
   async function apiFetch(path, options = {}) {
+    // Unificamos autenticación y errores para todas las herramientas del panel.
     const response = await fetch(path, {
       ...options,
       headers: {
@@ -41,6 +45,7 @@ export default function AdminPage() {
   }
 
   async function loadDashboard(nextFilters = reportFilters) {
+    // El servidor recibe exactamente los filtros que se muestran en pantalla.
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -66,6 +71,7 @@ export default function AdminPage() {
   }
 
   function exportDashboardReport() {
+    // La descarga se arma en el navegador y no deja archivos temporales en la API.
     if (!dashboard) return;
     const report = {
       generated_at: new Date().toISOString(),
@@ -133,6 +139,8 @@ export default function AdminPage() {
   }
 
   async function moderateSuggestion(id, action) {
+    // Tras aprobar o rechazar recargamos la lista: la respuesta del servidor es
+    // la autoridad sobre el nuevo estado.
     try {
       await apiFetch(`/api/site-suggestions/${id}/${action}`, {
         method: 'POST',

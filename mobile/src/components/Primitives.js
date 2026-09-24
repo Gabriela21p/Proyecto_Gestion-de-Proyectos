@@ -1,6 +1,8 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors, shadow } from '../theme';
 
+// Estas piezas pequeñas evitan que cada pantalla invente su propio encabezado,
+// campo o botón. No buscan ser una librería genérica fuera de Rolling.
 export function BrandHeader({ eyebrow = 'BOGOTÁ, COLOMBIA', title, subtitle, right }) {
   return (
     <View style={styles.header}>
@@ -34,11 +36,13 @@ export function Button({ children, kind = 'primary', loading, disabled, style, t
 }
 
 export function Notice({ children, error = false }) {
+  // Si no hay mensaje no reservamos espacio; así los formularios no saltan.
   if (!children) return null;
   return <View style={[styles.notice, error && styles.noticeError]}><Text style={[styles.noticeText, error && styles.noticeErrorText]}>{children}</Text></View>;
 }
 
 export function Pill({ children, active, onPress }) {
+  // El mismo aspecto sirve para una etiqueta informativa o un filtro pulsable.
   const content = <Text style={[styles.pillText, active && styles.pillTextActive]}>{children}</Text>;
   if (!onPress) return <View style={[styles.pill, active && styles.pillActive]}>{content}</View>;
   return <Pressable onPress={onPress} style={[styles.pill, active && styles.pillActive]}>{content}</Pressable>;

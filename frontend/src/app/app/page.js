@@ -8,6 +8,8 @@ const BOGOTA_CENTER = [-74.0721, 4.6486];
 const BOGOTA_BOUNDS = [[-74.231, 4.471], [-73.985, 4.839]];
 const initialFilters = { q: '', localidad: '', activity: '', min_rating: '', has_events: false, sort: 'recommended' };
 
+// Esta pantalla coordina dos piezas que deben sentirse como una sola: el listado
+// de lugares y el mapa. La selección siempre se refleja en ambos lados.
 export default function ExplorePage() {
   const { token } = useAuth();
   const mapNode = useRef(null);
@@ -29,6 +31,8 @@ export default function ExplorePage() {
   const [addressError, setAddressError] = useState('');
 
   useEffect(() => {
+    // Bootstrap reúne catálogos y métricas para evitar varias solicitudes
+    // pequeñas durante el primer render.
     fetch('/api/bootstrap').then((response) => response.ok ? response.json() : null).then((data) => {
       if (!data) return;
       setStats(data.stats || {});
@@ -39,6 +43,7 @@ export default function ExplorePage() {
 
   useEffect(() => {
     async function loadSites() {
+      // Los filtros viajan al backend para que mapa y lista compartan resultados.
       setLoading(true);
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
@@ -55,6 +60,7 @@ export default function ExplorePage() {
   }, [filters]);
 
   useEffect(() => {
+    // La ficha completa sólo se consulta para el lugar que está activo.
     if (!selectedId) {
       setSelected(null);
       return;
@@ -63,6 +69,8 @@ export default function ExplorePage() {
   }, [selectedId]);
 
   useEffect(() => {
+    // MapLibre se carga en el cliente porque necesita APIs del navegador. La
+    // instancia se conserva para no reconstruir el mapa al cambiar filtros.
     if (!mapNode.current || mapRef.current) return;
     let mounted = true;
     async function bootMap() {
@@ -149,6 +157,7 @@ export default function ExplorePage() {
   }, [addressResult, mapReady]);
 
   async function searchAddress(event) {
+    // Preview ubica el punto, pero no registra nada hasta que se confirme.
     event?.preventDefault();
     const address = filters.q.trim();
     if (address.length < 5) {

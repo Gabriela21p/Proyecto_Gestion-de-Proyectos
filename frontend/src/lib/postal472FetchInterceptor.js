@@ -16,6 +16,8 @@ export function installPostal472FetchInterceptor() {
 
   const nativeFetch = window.fetch.bind(window);
 
+  // Envolvemos fetch de forma conservadora: cualquier llamada ajena al registro
+  // de lugares sigue exactamente el camino normal del navegador.
   window.fetch = async (input, init = {}) => {
     const url = typeof input === 'string' ? input : input?.url || '';
     const method = String(init?.method || (typeof input !== 'string' ? input?.method : 'GET') || 'GET').toUpperCase();

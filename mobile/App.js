@@ -13,6 +13,8 @@ import TabBar from './src/components/TabBar';
 
 const SESSION_KEY = 'rolling.session';
 
+// App mantiene una navegación pequeña a propósito. Para estas cuatro pantallas
+// no necesitamos sumar un router nativo ni otra capa de estado global.
 export default function App() {
   const [session, setSession] = useState(null);
   const [booting, setBooting] = useState(true);
@@ -21,6 +23,8 @@ export default function App() {
   useEffect(() => { restoreSession(); }, []);
 
   async function restoreSession() {
+    // La copia local acelera el arranque, pero siempre confirmamos el token con
+    // la API antes de dar acceso a la aplicación.
     try {
       const saved = await AsyncStorage.getItem(SESSION_KEY);
       if (!saved) return;
@@ -35,6 +39,7 @@ export default function App() {
   }
 
   async function acceptSession(nextSession) {
+    // Persistimos la sesión completa para que el siguiente arranque sea fluido.
     setSession(nextSession);
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
   }
@@ -61,6 +66,7 @@ export default function App() {
   if (!session) return <AuthScreen onAuthenticated={acceptSession} />;
 
   let content;
+  // El enrutado vive aquí para que cada pantalla sólo se ocupe de su propio flujo.
   if (route.name === 'place') {
     content = <PlaceScreen siteId={route.params.siteId} session={session} onBack={() => navigate('explore')} />;
   } else if (route.name === 'register') {

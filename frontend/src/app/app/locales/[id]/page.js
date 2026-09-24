@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 
+// La ficha amplía el resumen del mapa con actividad y opiniones comunitarias.
 export default function PlaceDetailPage() {
   const { id } = useParams();
   const [site, setSite] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Pedimos datos frescos para reflejar reseñas y métricas recién calculadas.
     fetch(`/api/sites/${id}`).then(async (response) => {
       if (!response.ok) return null;
       return response.json();

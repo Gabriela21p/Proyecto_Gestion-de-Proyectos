@@ -7,6 +7,8 @@ import { BrandHeader, Button, Field, Notice, Pill } from '../components/Primitiv
 const categories = ['Café', 'Restaurante', 'Biblioteca', 'Museo', 'Mercado', 'Parque', 'Cultura', 'Comercio', 'Otro'];
 const empty = { nombre: '', categoria: '', direccion: '', localidad: '', descripcion: '', contacto: '', latitud: '', longitud: '' };
 
+// El formulario sigue el mismo recorrido de la web y deja claro que un lugar no
+// se publica hasta pasar por moderación.
 export default function RegisterScreen({ session, initialLocation, onDone }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(empty);
@@ -16,17 +18,21 @@ export default function RegisterScreen({ session, initialLocation, onDone }) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    // Cuando llegamos desde Explorar ya tenemos un punto confiable; lo conservamos
+    // mientras la persona completa el nombre y la historia del lugar.
     if (!initialLocation) return;
     setForm((current) => ({ ...current, direccion: initialLocation.direccion || '', localidad: initialLocation.localidad || '', latitud: String(initialLocation.latitud || ''), longitud: String(initialLocation.longitud || '') }));
     setPreview({ duplicates: initialLocation.duplicates || [] });
   }, [initialLocation]);
 
   function update(key, value) {
+    // Cambiar la dirección invalida sus coordenadas para no enviar un punto viejo.
     setForm((current) => ({ ...current, [key]: value, ...(key === 'direccion' ? { latitud: '', longitud: '' } : {}) }));
     setMessage(''); setError(false);
   }
 
   const canContinue = useMemo(() => {
+    // Cada paso revisa únicamente su información obligatoria.
     if (step === 0) return form.nombre.trim().length >= 3 && form.categoria;
     if (step === 1) return form.direccion.trim().length >= 5 && form.latitud && form.longitud;
     if (step === 2) return form.descripcion.trim().length >= 10;
@@ -34,6 +40,7 @@ export default function RegisterScreen({ session, initialLocation, onDone }) {
   }, [step, form]);
 
   async function validateAddress() {
+    // Preview normaliza la dirección y avisa sobre lugares cercanos sin guardar.
     setLoading(true); setMessage('Validando la dirección...'); setError(false);
     try {
       const data = await apiRequest('/api/site-suggestions/preview', {
@@ -49,6 +56,7 @@ export default function RegisterScreen({ session, initialLocation, onDone }) {
   }
 
   async function submit() {
+    // El backend vuelve a validar coordenadas y crea una sugerencia pendiente.
     setLoading(true); setMessage('Enviando a moderación...'); setError(false);
     try {
       await apiRequest('/api/site-suggestions', {

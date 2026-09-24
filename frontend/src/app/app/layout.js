@@ -11,6 +11,8 @@ export default function AppLayout({ children }) {
   const { user, loading, logout } = useAuth();
 
   useEffect(() => {
+    // El middleware cubre la primera carga; esta comprobación protege también
+    // las navegaciones del lado del cliente y los cierres de sesión.
     if (!loading && !user) router.replace('/login');
   }, [loading, user, router]);
 
@@ -32,6 +34,7 @@ export default function AppLayout({ children }) {
   }
 
   const navItem = (href, label) => {
+    // Consideramos activas las subrutas para que la sección no pierda contexto.
     const active = href === '/app' ? pathname === '/app' : pathname === href || pathname.startsWith(`${href}/`);
     return <Link className={active ? 'rolling-nav__link rolling-nav__link--active' : 'rolling-nav__link'} href={href}>{label}</Link>;
   };
