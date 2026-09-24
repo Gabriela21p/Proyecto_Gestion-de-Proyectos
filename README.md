@@ -161,7 +161,9 @@ El proxy de Next envia `/api/*` a `http://localhost:4000`.
 
 ## Levantar app movil
 
-La app usa Expo SDK 57 y Node.js 22.13 o superior. Comparte usuarios, lugares, direcciones y reviews con la web.
+La app usa Expo SDK 57 y Node.js 22.13 o superior. Comparte usuarios, lugares, direcciones y reviews con la web. El explorador permite seleccionar sitios directamente sobre OpenStreetMap y muestra una ficha flotante sincronizada con los marcadores.
+
+Los usuarios `moderator` y `admin` ven el módulo **Admin** en la navegación móvil. Allí tienen el resumen operativo y la moderación de sugerencias; únicamente `admin` puede consultar usuarios y cambiar roles, igual que en la aplicación web.
 
 ```powershell
 cd mobile

@@ -67,7 +67,34 @@ export default function ExploreScreen({ session, onOpenPlace, onRegister }) {
       <View style={styles.mapWrap}>
         <OsmMap sites={visibleSites} selected={selected} location={location} onSelectSite={(id) => { setLocation(null); setSelected(sites.find((site) => site.id === id) || null); }} />
         <View style={styles.mapBadge}><Text style={styles.mapBadgeDot}>●</Text><Text style={styles.mapBadgeText}>{sites.length} lugares en comunidad</Text></View>
+        {!location && selected ? (
+          <Pressable onPress={() => onOpenPlace(selected.id)} style={({ pressed }) => [styles.mapPlaceCard, pressed && styles.mapPlaceCardPressed]}>
+            <View style={styles.mapPlaceTop}>
+              <View style={styles.mapPlaceIcon}><Text style={styles.mapPlaceIconText}>◆</Text></View>
+              <View style={styles.mapPlaceBody}>
+                <Text numberOfLines={1} style={styles.mapPlaceKicker}>{selected.categoria || 'Lugar local'} · {selected.barrio?.localidad || 'Bogotá'}</Text>
+                <Text numberOfLines={2} style={styles.mapPlaceTitle}>{selected.nombre}</Text>
+              </View>
+              <View style={styles.mapPlaceArrow}><Text style={styles.mapPlaceArrowText}>›</Text></View>
+            </View>
+            <View style={styles.mapPlaceMeta}>
+              <Text numberOfLines={1} style={styles.mapPlaceAddress}>{selected.direccion || 'Dirección por confirmar'}</Text>
+              <Text style={styles.mapPlaceRating}>{Number(selected.rating_promedio || 0) ? `★ ${Number(selected.rating_promedio).toFixed(1)}` : 'Nuevo'}</Text>
+            </View>
+          </Pressable>
+        ) : null}
       </View>
+
+      {!location && visibleSites.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mapRail}>
+          {visibleSites.slice(0, 12).map((site) => (
+            <Pressable key={site.id} onPress={() => setSelected(site)} style={[styles.mapRailItem, selected?.id === site.id && styles.mapRailItemActive]}>
+              <Text numberOfLines={1} style={[styles.mapRailName, selected?.id === site.id && styles.mapRailNameActive]}>{site.nombre}</Text>
+              <Text numberOfLines={1} style={[styles.mapRailCategory, selected?.id === site.id && styles.mapRailCategoryActive]}>{site.categoria || 'Lugar local'}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
 
       {location && (
         <View style={styles.confirmCard}>
@@ -75,15 +102,6 @@ export default function ExploreScreen({ session, onOpenPlace, onRegister }) {
           {location.duplicates.length ? <Pressable onPress={() => onOpenPlace(location.duplicates[0].id)} style={styles.match}><Text style={styles.matchLabel}>Lugar cercano registrado</Text><Text style={styles.matchName}>{location.duplicates[0].nombre}</Text></Pressable> : <Text style={styles.newPlace}>Aún no hay un lugar registrado en este punto.</Text>}
           <Button onPress={() => onRegister(location)}>Registrar este lugar</Button>
           <Button kind="ghost" onPress={() => setLocation(null)}>Buscar otra dirección</Button>
-        </View>
-      )}
-
-      {!location && selected && (
-        <View style={styles.selectedCard}>
-          <Text style={styles.kicker}>{String(selected.categoria || 'LUGAR').toUpperCase()} · {String(selected.barrio?.localidad || 'BOGOTÁ').toUpperCase()}</Text>
-          <Text style={styles.selectedTitle}>{selected.nombre}</Text><Text style={styles.address}>{selected.direccion || 'Dirección por confirmar'}</Text>
-          <View style={styles.meta}><Pill>{Number(selected.rating_promedio || 0) ? `★ ${Number(selected.rating_promedio).toFixed(1)}` : 'Nuevo en Rolling'}</Pill><Pill>{selected.total_reviews || 0} reseñas</Pill></View>
-          <Button onPress={() => onOpenPlace(selected.id)}>Ver ficha completa</Button>
         </View>
       )}
 
@@ -107,15 +125,21 @@ const styles = StyleSheet.create({
   count: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.green }, countText: { color: colors.white, fontWeight: '900' },
   searchCard: { gap: 10, marginHorizontal: 20, padding: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.white, ...shadow },
   chips: { flexDirection: 'row', gap: 8 },
-  mapWrap: { height: 310, marginTop: 18, overflow: 'hidden', backgroundColor: '#dce5dc' },
+  mapWrap: { height: 410, marginHorizontal: 14, marginTop: 18, overflow: 'hidden', borderRadius: 24, borderWidth: 1, borderColor: colors.line, backgroundColor: '#dce5dc', ...shadow },
   mapBadge: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 7, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: '#fffffff2', ...shadow },
   mapBadgeDot: { color: colors.green }, mapBadgeText: { color: colors.ink, fontSize: 11, fontWeight: '800' },
+  mapPlaceCard: { position: 'absolute', left: 12, right: 12, bottom: 12, gap: 9, borderRadius: 20, padding: 14, backgroundColor: '#fffffff7', ...shadow },
+  mapPlaceCardPressed: { transform: [{ scale: 0.985 }] }, mapPlaceTop: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+  mapPlaceIcon: { width: 45, height: 45, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.coral }, mapPlaceIconText: { color: colors.white, fontSize: 14 },
+  mapPlaceBody: { flex: 1, gap: 2 }, mapPlaceKicker: { color: colors.coral, fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }, mapPlaceTitle: { color: colors.ink, fontFamily: 'serif', fontSize: 20, lineHeight: 22, fontWeight: '700' },
+  mapPlaceArrow: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.green }, mapPlaceArrowText: { marginTop: -2, color: colors.white, fontSize: 26 },
+  mapPlaceMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 }, mapPlaceAddress: { flex: 1, color: colors.muted, fontSize: 10 }, mapPlaceRating: { color: colors.green, fontSize: 11, fontWeight: '900' },
+  mapRail: { gap: 8, paddingHorizontal: 14, paddingTop: 11 }, mapRailItem: { width: 145, gap: 2, borderWidth: 1, borderColor: colors.line, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: colors.white }, mapRailItemActive: { borderColor: colors.green, backgroundColor: colors.green },
+  mapRailName: { color: colors.ink, fontFamily: 'serif', fontSize: 14, fontWeight: '700' }, mapRailNameActive: { color: colors.white }, mapRailCategory: { color: colors.coral, fontSize: 8, fontWeight: '900', textTransform: 'uppercase' }, mapRailCategoryActive: { color: colors.lime },
   confirmCard: { gap: 11, margin: 16, marginBottom: 0, borderRadius: 19, padding: 18, backgroundColor: colors.white, ...shadow },
   kicker: { color: colors.coral, fontSize: 9, fontWeight: '900', letterSpacing: 1 }, confirmTitle: { color: colors.ink, fontFamily: 'serif', fontSize: 25, fontWeight: '700' }, confirmCopy: { color: colors.muted },
   newPlace: { borderRadius: 10, padding: 11, color: colors.green, backgroundColor: colors.greenSoft, fontSize: 12, fontWeight: '700' },
   match: { gap: 3, borderRadius: 12, padding: 12, backgroundColor: colors.warning }, matchLabel: { color: '#876325', fontSize: 10, fontWeight: '800' }, matchName: { color: colors.ink, fontWeight: '900' },
-  selectedCard: { gap: 10, margin: 16, marginBottom: 0, borderRadius: 19, padding: 18, backgroundColor: colors.white, ...shadow },
-  selectedTitle: { color: colors.ink, fontFamily: 'serif', fontSize: 26, fontWeight: '700' }, address: { color: colors.muted, fontSize: 13 }, meta: { flexDirection: 'row', gap: 7 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 8 }, sectionTitle: { color: colors.ink, fontFamily: 'serif', fontSize: 21, fontWeight: '700' },
   list: { paddingHorizontal: 14, gap: 7 }, empty: { padding: 24, color: colors.muted, textAlign: 'center' },
   place: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: 'transparent', borderRadius: 16, padding: 11 }, placeActive: { borderColor: colors.line, backgroundColor: colors.white },

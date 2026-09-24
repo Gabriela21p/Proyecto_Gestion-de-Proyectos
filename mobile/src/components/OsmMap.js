@@ -72,7 +72,9 @@ const MAP_HTML = `<!doctype html>
   <style>
     html,body,#map{height:100%;width:100%;margin:0;background:#e2e8e2}
     .leaflet-control-attribution{font:9px system-ui,sans-serif}
-    .leaflet-tooltip{border:0;border-radius:8px;padding:6px 8px;box-shadow:0 5px 14px #17282033;font:700 11px system-ui,sans-serif;color:#19241f}
+    .leaflet-tooltip{border:0;border-radius:10px;padding:7px 10px;box-shadow:0 5px 14px #17282033;font:700 11px system-ui,sans-serif;color:#19241f}
+    .leaflet-control-zoom{border:0!important;box-shadow:0 7px 18px #1728202b!important}
+    .leaflet-control-zoom a{border:0!important;color:#225e49!important}
   </style>
 </head>
 <body>
@@ -100,7 +102,7 @@ const MAP_HTML = `<!doctype html>
         markers.clearLayers();
         (data.sites || []).forEach(function (site) {
           const active = site.id === data.selectedId;
-          L.circleMarker([site.lat, site.lng], {
+          const marker = L.circleMarker([site.lat, site.lng], {
             radius: active ? 10 : 8,
             color: '#ffffff',
             weight: 3,
@@ -109,16 +111,17 @@ const MAP_HTML = `<!doctype html>
           }).addTo(markers)
             .bindTooltip(site.name, { direction: 'top', offset: [0, -8] })
             .on('click', function () { send({ type: 'select', id: site.id }); });
+          if (active) marker.openTooltip();
         });
 
         if (data.location) {
           L.circleMarker([data.location.lat, data.location.lng], {
             radius: 11, color: '#ffffff', weight: 3, fillColor: '#e25f3f', fillOpacity: 1
           }).addTo(markers).bindTooltip(data.location.address, { direction: 'top', offset: [0, -9] });
-          map.setView([data.location.lat, data.location.lng], 16, { animate: true });
+          map.flyTo([data.location.lat, data.location.lng], 16, { animate: true, duration: .65 });
         } else if (data.selectedId) {
           const current = (data.sites || []).find(function (site) { return site.id === data.selectedId; });
-          if (current) map.setView([current.lat, current.lng], 14, { animate: true });
+          if (current) map.flyTo([current.lat, current.lng], 14, { animate: true, duration: .65 });
         }
       };
 

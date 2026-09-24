@@ -10,6 +10,7 @@ import ExploreScreen from './src/screens/ExploreScreen';
 import PlaceScreen from './src/screens/PlaceScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import AdminScreen from './src/screens/AdminScreen';
 import TabBar from './src/components/TabBar';
 
 const SESSION_KEY = 'rolling.session';
@@ -78,6 +79,8 @@ function RollingApp() {
     content = <RegisterScreen session={session} initialLocation={route.params.location} onDone={() => navigate('explore')} />;
   } else if (route.name === 'profile') {
     content = <ProfileScreen session={session} onLogout={logout} />;
+  } else if (route.name === 'admin') {
+    content = <AdminScreen session={session} />;
   } else {
     content = <ExploreScreen session={session} onOpenPlace={(siteId) => navigate('place', { siteId })} onRegister={(location) => navigate('register', { location })} />;
   }
@@ -86,7 +89,7 @@ function RollingApp() {
     <SafeAreaView style={styles.app}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.paper} />
       <View style={styles.content}>{content}</View>
-      {route.name !== 'place' && <TabBar active={route.name} onNavigate={navigate} />}
+      {route.name !== 'place' && <TabBar active={route.name} user={session.user} onNavigate={navigate} />}
     </SafeAreaView>
   );
 }

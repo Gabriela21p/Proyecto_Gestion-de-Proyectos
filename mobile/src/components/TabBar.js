@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme';
 
-const tabs = [
+const baseTabs = [
   { key: 'explore', icon: '⌖', label: 'Explorar' },
   { key: 'register', icon: '+', label: 'Registrar' },
   { key: 'profile', icon: 'R', label: 'Mi cuenta' },
@@ -9,7 +9,9 @@ const tabs = [
 
 // La barra sólo contiene destinos de primer nivel. Las fichas se abren encima y
 // conservan su propio botón de regreso.
-export default function TabBar({ active, onNavigate }) {
+export default function TabBar({ active, user, onNavigate }) {
+  const canModerate = ['admin', 'moderator'].includes(user?.role);
+  const tabs = canModerate ? [...baseTabs.slice(0, 2), { key: 'admin', icon: '◇', label: 'Admin' }, baseTabs[2]] : baseTabs;
   return (
     <View style={styles.bar}>
       {tabs.map((tab) => {
