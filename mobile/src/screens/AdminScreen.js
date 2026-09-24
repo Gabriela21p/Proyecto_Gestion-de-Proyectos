@@ -20,6 +20,8 @@ export default function AdminScreen({ session }) {
   const [userQuery, setUserQuery] = useState('');
   const [userRole, setUserRole] = useState('');
   const [loading, setLoading] = useState(true);
+  const [processingSuggestion, setProcessingSuggestion] = useState(null);
+  const [processingUser, setProcessingUser] = useState(null);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
@@ -49,18 +51,22 @@ export default function AdminScreen({ session }) {
   }
 
   async function moderate(id, action) {
-    setLoading(true);
+    setProcessingSuggestion({ id, action });
     try {
       await apiRequest(`/api/site-suggestions/${id}/${action}`, {
         token: session.token,
         method: 'POST',
         body: action === 'reject' ? { reason: 'No cumple criterios de publicación o parece duplicado.' } : {},
       });
-      setSuggestions((current) => current.filter((item) => item.id !== id));
+      // En una cola filtrada el elemento desaparece; en "all" conserva su lugar
+      // y cambia de estado para confirmar visualmente que la acción sí se guardó.
+      setSuggestions((current) => suggestionStatus === 'all'
+        ? current.map((item) => item.id === id ? { ...item, status: action === 'approve' ? 'approved' : 'rejected' } : item)
+        : current.filter((item) => item.id !== id));
       setMessage(action === 'approve' ? 'Lugar aprobado y publicado en el mapa.' : 'Sugerencia rechazada.');
       setIsError(false);
     } catch (error) { setMessage(error.message); setIsError(true); }
-    finally { setLoading(false); }
+    finally { setProcessingSuggestion(null); }
   }
 
   function confirmRole(user, role) {
@@ -72,11 +78,13 @@ export default function AdminScreen({ session }) {
   }
 
   async function updateRole(id, role) {
+    setProcessingUser({ id, role });
     try {
       const data = await apiRequest(`/api/admin/users/${id}/role`, { token: session.token, method: 'PATCH', body: { role } });
       setUsers((current) => current.map((item) => item.id === id ? data.user : item));
       setMessage(`Rol actualizado a ${role}.`); setIsError(false);
     } catch (error) { setMessage(error.message); setIsError(true); }
+    finally { setProcessingUser(null); }
   }
 
   const tabs = useMemo(() => [
@@ -99,8 +107,8 @@ export default function AdminScreen({ session }) {
       {loading && !dashboard && !suggestions.length && !users.length ? <ActivityIndicator style={styles.loader} color={colors.green} /> : null}
 
       {view === 'dashboard' && <DashboardView data={dashboard} filters={dashboardFilters} setFilters={setDashboardFilters} onApply={loadCurrentView} />}
-      {view === 'sites' && <SuggestionsView items={suggestions} status={suggestionStatus} setStatus={setSuggestionStatus} onModerate={confirmModeration} loading={loading} />}
-      {view === 'users' && canManageUsers && <UsersView items={users} query={userQuery} setQuery={setUserQuery} role={userRole} setRole={setUserRole} onApply={loadCurrentView} onChangeRole={confirmRole} />}
+      {view === 'sites' && <SuggestionsView items={suggestions} status={suggestionStatus} setStatus={setSuggestionStatus} onModerate={confirmModeration} loading={loading} processing={processingSuggestion} />}
+      {view === 'users' && canManageUsers && <UsersView items={users} query={userQuery} setQuery={setUserQuery} role={userRole} setRole={setUserRole} onApply={loadCurrentView} onChangeRole={confirmRole} processing={processingUser} />}
     </ScrollView>
   );
 }
@@ -129,7 +137,7 @@ function DashboardView({ data, filters, setFilters, onApply }) {
   </View>;
 }
 
-function SuggestionsView({ items, status, setStatus, onModerate, loading }) {
+function SuggestionsView({ items, status, setStatus, onModerate, loading, processing }) {
   return <View style={styles.stack}>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterStrip}>{suggestionStates.map((item) => <Pill key={item} active={status === item} onPress={() => setStatus(item)}>{item}</Pill>)}</ScrollView>
     {!loading && !items.length ? <Empty title="No hay sugerencias en esta vista" copy="Las nuevas postulaciones aparecerán aquí con ubicación y señales de duplicado." /> : null}
@@ -137,19 +145,19 @@ function SuggestionsView({ items, status, setStatus, onModerate, loading }) {
       <Text style={styles.cardKicker}>{item.status} · {item.categoria || 'Sitio local'}</Text><Text style={styles.cardTitle}>{item.nombre}</Text><Text style={styles.cardBody}>{item.descripcion}</Text>
       <View style={styles.metaBox}><Text style={styles.metaText}>{item.direccion || 'Dirección por validar'}</Text><Text style={styles.metaText}>{item.localidad || 'Localidad por validar'} · por {item.suggested_by || 'comunidad'}</Text>{item.latitud && item.longitud ? <Text style={styles.coords}>{Number(item.latitud).toFixed(5)}, {Number(item.longitud).toFixed(5)}</Text> : null}</View>
       {item.duplicate_site_name ? <Notice error>Posible duplicado: {item.duplicate_site_name}</Notice> : null}
-      {item.status === 'pending' ? <View style={styles.actions}><Button style={styles.action} onPress={() => onModerate(item, 'approve')}>Aprobar</Button><Button style={styles.action} kind="danger" onPress={() => onModerate(item, 'reject')}>Rechazar</Button></View> : null}
+      {item.status === 'pending' ? <View style={styles.actions}><Button style={styles.action} loading={processing?.id === item.id && processing.action === 'approve'} disabled={processing?.id === item.id} onPress={() => onModerate(item, 'approve')}>Aprobar</Button><Button style={styles.action} kind="danger" loading={processing?.id === item.id && processing.action === 'reject'} disabled={processing?.id === item.id} onPress={() => onModerate(item, 'reject')}>Rechazar</Button></View> : <View style={[styles.savedState, item.status === 'rejected' && styles.savedStateRejected]}><Text style={[styles.savedStateText, item.status === 'rejected' && styles.savedStateTextRejected]}>{item.status === 'approved' ? '✓ Publicado en el mapa' : '× Sugerencia rechazada'}</Text></View>}
     </View>)}
   </View>;
 }
 
-function UsersView({ items, query, setQuery, role, setRole, onApply, onChangeRole }) {
+function UsersView({ items, query, setQuery, role, setRole, onApply, onChangeRole, processing }) {
   return <View style={styles.stack}>
     <Section title="Buscar usuarios" copy="Filtra por nombre, correo o rol.">
       <Field value={query} onChangeText={setQuery} placeholder="Usuario o correo" returnKeyType="search" onSubmitEditing={onApply} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterStrip}><Pill active={!role} onPress={() => setRole('')}>Todos</Pill>{roles.map((item) => <Pill key={item} active={role === item} onPress={() => setRole(item)}>{item}</Pill>)}</ScrollView>
       <Button onPress={onApply}>Aplicar filtros</Button>
     </Section>
-    {items.map((user) => <View key={user.id} style={styles.userCard}><View style={styles.avatar}><Text style={styles.avatarText}>{String(user.username || 'R')[0].toUpperCase()}</Text></View><View style={styles.userMain}><Text style={styles.userName}>{user.username}</Text><Text style={styles.userMeta}>{user.email || 'sin email'}</Text><Text style={styles.userMeta}>Reputación {user.reputation} · peso {Number(user.review_weight || 1).toFixed(2)}x</Text><View style={styles.roleRow}>{roles.map((item) => <Pressable key={item} onPress={() => onChangeRole(user, item)} style={[styles.roleChoice, user.role === item && styles.roleChoiceActive]}><Text style={[styles.roleChoiceText, user.role === item && styles.roleChoiceTextActive]}>{item}</Text></Pressable>)}</View></View></View>)}
+    {items.map((user) => <View key={user.id} style={styles.userCard}><View style={styles.avatar}><Text style={styles.avatarText}>{String(user.username || 'R')[0].toUpperCase()}</Text></View><View style={styles.userMain}><View style={styles.userTitleRow}><Text style={styles.userName}>{user.username}</Text><View style={styles.currentRole}><Text style={styles.currentRoleText}>{user.role}</Text></View></View><Text style={styles.userMeta}>{user.email || 'sin email'}</Text><Text style={styles.userMeta}>Reputación {user.reputation} · peso {Number(user.review_weight || 1).toFixed(2)}x</Text><Text style={styles.changeRoleLabel}>{processing?.id === user.id ? `Guardando ${processing.role}…` : 'Cambiar rol a'}</Text><View style={styles.roleRow}>{roles.filter((item) => item !== user.role).map((item) => <Pressable key={item} disabled={processing?.id === user.id} onPress={() => onChangeRole(user, item)} style={[styles.roleChoice, processing?.id === user.id && styles.roleChoiceDisabled]}><Text style={styles.roleChoiceText}>{item}</Text></Pressable>)}</View></View></View>)}
   </View>;
 }
 
@@ -186,6 +194,8 @@ const styles = StyleSheet.create({
   progressRow: { gap: 6 }, progressHead: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 }, progressLabel: { flex: 1, color: colors.ink, fontSize: 12, fontWeight: '800', textTransform: 'capitalize' }, progressValue: { color: colors.muted, fontSize: 11 }, progressTrack: { height: 7, overflow: 'hidden', borderRadius: 99, backgroundColor: colors.field }, progressBar: { height: '100%', borderRadius: 99, backgroundColor: colors.green },
   serviceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 }, service: { minWidth: '47%', flex: 1, flexDirection: 'row', justifyContent: 'space-between', borderRadius: 11, padding: 11, backgroundColor: colors.field }, serviceName: { color: colors.ink, fontSize: 11, fontWeight: '800' }, serviceStatus: { color: colors.coral, fontSize: 10, fontWeight: '900' }, serviceOk: { color: colors.green },
   metaBox: { gap: 3, borderRadius: 12, padding: 11, backgroundColor: colors.field }, metaText: { color: colors.muted, fontSize: 11 }, coords: { color: colors.green, fontSize: 10, fontWeight: '800' }, actions: { flexDirection: 'row', gap: 9, marginTop: 6 }, action: { flex: 1 },
+  savedState: { alignItems: 'center', borderRadius: 12, padding: 12, backgroundColor: colors.greenSoft }, savedStateRejected: { backgroundColor: '#f9e8e3' }, savedStateText: { color: colors.green, fontSize: 11, fontWeight: '900' }, savedStateTextRejected: { color: colors.error },
   userCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, borderWidth: 1, borderColor: colors.line, borderRadius: 18, padding: 14, backgroundColor: colors.white }, avatar: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 21, backgroundColor: colors.lime }, avatarText: { color: colors.ink, fontFamily: 'serif', fontSize: 18, fontWeight: '900' }, userMain: { flex: 1, gap: 3 }, userName: { color: colors.ink, fontSize: 15, fontWeight: '900' }, userMeta: { color: colors.muted, fontSize: 10 }, roleRow: { flexDirection: 'row', gap: 5, marginTop: 8 }, roleChoice: { flex: 1, alignItems: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 8, paddingVertical: 7 }, roleChoiceActive: { borderColor: colors.green, backgroundColor: colors.green }, roleChoiceText: { color: colors.muted, fontSize: 8, fontWeight: '800' }, roleChoiceTextActive: { color: colors.white },
+  userTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 }, currentRole: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: colors.green }, currentRoleText: { color: colors.white, fontSize: 8, fontWeight: '900', textTransform: 'uppercase' }, changeRoleLabel: { marginTop: 8, color: colors.muted, fontSize: 9, fontWeight: '800' }, roleChoiceDisabled: { opacity: 0.4 },
   empty: { alignItems: 'center', gap: 6, borderWidth: 1, borderColor: colors.line, borderRadius: 18, padding: 28, backgroundColor: colors.white }, emptyTitle: { color: colors.ink, fontWeight: '900', textAlign: 'center' }, emptyText: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
 });
