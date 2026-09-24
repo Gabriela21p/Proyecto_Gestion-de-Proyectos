@@ -3,6 +3,8 @@ import { config } from '../config.js';
 
 const { Pool } = pg;
 
+// El arranque es idempotente a propósito. Una instalación nueva crea su esquema
+// y una existente recibe columnas faltantes sin exigir una migración manual.
 export const pool = new Pool({
   connectionString: config.databaseUrl,
   max: 12

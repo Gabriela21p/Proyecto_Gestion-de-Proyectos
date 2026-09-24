@@ -4,7 +4,7 @@ services:
     container_name: rolling-postgis
     environment:
       POSTGRES_USER: rolling
-      POSTGRES_PASSWORD: rolling
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-rolling}"
       POSTGRES_DB: rolling
     ports:
       - "5432:5432"
@@ -36,7 +36,7 @@ services:
     image: getmeili/meilisearch:v1.10
     container_name: rolling-meilisearch
     environment:
-      MEILI_MASTER_KEY: rolling_master_key
+      MEILI_MASTER_KEY: "${MEILI_MASTER_KEY:-rolling_master_key}"
       MEILI_NO_ANALYTICS: "true"
     ports:
       - "7700:7700"
@@ -58,21 +58,27 @@ services:
       meilisearch:
         condition: service_started
     environment:
-      NODE_ENV: development
+      NODE_ENV: "${NODE_ENV:-development}"
       PORT: 4000
-      FRONTEND_ORIGIN: http://localhost:3000
-      DATABASE_URL: postgres://rolling:rolling@postgres:5432/rolling
+      FRONTEND_ORIGIN: "${FRONTEND_ORIGIN:-http://localhost:3000}"
+      DATABASE_URL: "postgres://rolling:${POSTGRES_PASSWORD:-rolling}@postgres:5432/rolling"
       MONGO_URL: mongodb://mongo:27017/rolling
       REDIS_URL: redis://redis:6379
       MEILI_HOST: http://meilisearch:7700
-      MEILI_MASTER_KEY: rolling_master_key
+      MEILI_MASTER_KEY: "${MEILI_MASTER_KEY:-rolling_master_key}"
+      JWT_SECRET: "${JWT_SECRET:-dev-change-this-secret-before-production}"
       OSM_TILE_URL: https://tile.openstreetmap.org/{z}/{x}/{y}.png
       OFFICIAL_472_ENTRY_URL: https://visor.codigopostal.gov.co/RestService472/CodigoPostal/EntryOrdinary
       OFFICIAL_472_TOKEN_URL: https://visor.codigopostal.gov.co/472/visor/javascript/layout.aspx
       OFFICIAL_472_TIMEOUT_MS: 30000
       OFFICIAL_472_TOKEN_TIMEOUT_MS: 10000
       OFFICIAL_472_TOKEN_TTL_MS: 3600000
-      SEED_GOOGLE_PLACES_DEMO: "1"
+      SEED_GOOGLE_PLACES_DEMO: "${SEED_GOOGLE_PLACES_DEMO:-1}"
+      SEED_DEMO_DATA: "${SEED_DEMO_DATA:-0}"
+      DEMO_ADMIN_PASSWORD: "${DEMO_ADMIN_PASSWORD:-Demo12345*}"
+      DEV1_ADMIN_PASSWORD: "${DEV1_ADMIN_PASSWORD:-careculos}"
+      SEBAS_ADMIN_PASSWORD: "${SEBAS_ADMIN_PASSWORD:-RollingSebas2026*}"
+      SANTI_ADMIN_PASSWORD: "${SANTI_ADMIN_PASSWORD:-RollingSanti2026*}"
     ports:
       - "4000:4000"
     volumes:

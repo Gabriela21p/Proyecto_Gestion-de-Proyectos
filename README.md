@@ -2,6 +2,12 @@
 
 Rolling es una app comunitaria para descubrir sitios destacables por localidad, priorizando reputacion, reviews utiles, eventos activos y reportes de la comunidad.
 
+## Documentación operativa
+
+- [Primer despliegue](docs/FIRST_DEPLOY.md): configuración, arranque, verificación, móvil, APK y requisitos para un staging público.
+- [Estilo de comentarios](docs/COMMENTING_STYLE.md): criterio utilizado para mantener comentarios naturales y útiles.
+- [Volcado de datos demo](data/README.md): alcance, restauración y reglas de sanitización.
+
 ## Arquitectura implementada
 
 - Cliente web: Next.js + MapLibre GL JS.

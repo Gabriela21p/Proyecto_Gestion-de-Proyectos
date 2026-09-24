@@ -1,6 +1,8 @@
 import { MeiliSearch } from 'meilisearch';
 import { config } from '../config.js';
 
+// Meilisearch acelera el descubrimiento, pero PostgreSQL sigue siendo la fuente de
+// verdad. Por eso el índice siempre puede reconstruirse a partir de los sitios.
 export const meili = new MeiliSearch({
   host: config.meiliHost,
   apiKey: config.meiliMasterKey

@@ -4,6 +4,8 @@ import { query } from '../db/postgres.js';
 let tokenCache = { value: '', expiresAt: 0 };
 let tokenPromise = null;
 
+// Primero consultamos lo que Rolling ya aprendió. Solo acudimos a 4-72 cuando
+// falta una respuesta confiable y conservamos el resultado para próximas búsquedas.
 export async function resolveRollingAddress({
   address,
   department,

@@ -3,6 +3,8 @@ import IORedis from 'ioredis';
 import { config } from '../config.js';
 import { reindexAllSites } from './sites.js';
 
+// Las colas separan tareas secundarias de la respuesta HTTP: notificar o reindexar
+// puede tardar sin hacer que la acción principal se sienta lenta para la persona.
 export const redis = new IORedis(config.redisUrl, { maxRetriesPerRequest: null });
 
 export const notificationsQueue = new Queue('notifications', { connection: redis });

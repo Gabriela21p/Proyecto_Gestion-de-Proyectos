@@ -1,6 +1,8 @@
 import { request } from 'undici';
 import { config } from '../config.js';
 
+// Estas consultas siguen disponibles para integraciones antiguas y semillas
+// opcionales. La resolución principal de direcciones ya vive en postal472.js.
 export async function geocode(query) {
   const url = new URL('/search', config.nominatimUrl);
   url.searchParams.set('q', query);

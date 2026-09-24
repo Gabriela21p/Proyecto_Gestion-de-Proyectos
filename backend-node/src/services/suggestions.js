@@ -8,6 +8,8 @@ const BOGOTA_DIVIPOLA = '11001';
 const DUPLICATE_RADIUS_METERS = 90;
 const BOGOTA_BOUNDS = { west: -74.231, south: 4.471, east: -73.985, north: 4.839 };
 
+// Una sugerencia nunca se convierte en sitio por el solo hecho de tener coordenadas:
+// aquí se comprueban ciudad, cercanía y estado antes de entregarla a moderación.
 export async function listSiteSuggestions({ status = 'pending', limit = 80 } = {}) {
   const result = await query(
     `

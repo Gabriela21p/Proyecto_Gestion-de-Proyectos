@@ -9,6 +9,8 @@ import { Server as SocketServer } from 'socket.io';
 import { z } from 'zod';
 import os from 'node:os';
 
+// Este archivo es el punto de encuentro de la API: registra transportes y rutas,
+// mientras las reglas de negocio permanecen en services para poder probarlas aparte.
 import { config } from './config.js';
 import { initPostgres, query, closePostgres } from './db/postgres.js';
 import { initMongo, mongoDb, closeMongo } from './db/mongo.js';

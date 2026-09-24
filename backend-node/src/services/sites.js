@@ -1,6 +1,8 @@
 import { query } from '../db/postgres.js';
 import { indexSites } from './search.js';
 
+// Este servicio entrega el mismo modelo de lugar a web y móvil. Mantener aquí los
+// filtros, métricas y DTO evita que cada cliente interprete PostgreSQL por su cuenta.
 export function slugify(value) {
   return value
     .toLowerCase()

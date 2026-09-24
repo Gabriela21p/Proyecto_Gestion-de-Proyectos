@@ -5,6 +5,8 @@ import { createClient } from '@supabase/supabase-js';
 import { config } from '../config.js';
 import { query } from '../db/postgres.js';
 
+// La autenticación local mantiene el MVP autónomo. Si se entregan credenciales de
+// Supabase, el alta también se refleja allí sin cambiar el contrato de la API.
 const supabase = config.supabaseUrl && config.supabaseAnonKey
   ? createClient(config.supabaseUrl, config.supabaseAnonKey)
   : null;
