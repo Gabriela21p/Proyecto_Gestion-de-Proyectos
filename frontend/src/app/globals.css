@@ -2,16 +2,17 @@
 
 /* Base visual de Rolling: colores cálidos, tinta oscura y acentos comunitarios. */
 :root {
-  --ink: #17202a;
-  --muted: #667085;
-  --line: #d8dee8;
-  --paper: #f4f1ea;
-  --panel: rgba(255, 255, 255, 0.9);
-  --green: #1f8a70;
-  --blue: #2667ff;
-  --yellow: #f5b841;
-  --red: #dd5e42;
-  --shadow: 0 24px 70px rgba(23, 32, 42, 0.16);
+  /* Paleta única de Rolling (la misma del explorador y de la app móvil). */
+  --ink: #19241f;
+  --muted: #66736d;
+  --line: #d9ddd7;
+  --paper: #f7f5ef;
+  --panel: #ffffff;
+  --green: #225e49;
+  --blue: #2f5d8a;
+  --yellow: #d9a441;
+  --red: #c4492c;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -27,7 +28,7 @@ body {
 body {
   color: var(--ink);
   background: var(--paper);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-body);
 }
 
 button,
@@ -122,7 +123,7 @@ p {
 .map-error span,
 .map-empty span {
   color: #8a4a37;
-  font-size: 0.9rem;
+  font-size: var(--fs-body);
 }
 
 .map-empty span {
@@ -138,7 +139,7 @@ p {
   border: 1px solid rgba(255, 255, 255, 0.7);
   background: var(--panel);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
+  
 }
 
 .map-brand {
@@ -154,7 +155,7 @@ p {
 }
 
 .map-brand strong {
-  font-size: 1.7rem;
+  font-size: var(--fs-title);
 }
 
 .map-brand span {
@@ -186,12 +187,12 @@ p {
 }
 
 .map-stats strong {
-  font-size: 1.45rem;
+  font-size: var(--fs-subtitle);
 }
 
 .map-stats span {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: var(--fs-info);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -238,7 +239,7 @@ p {
 .real-map-pin[data-category*="cultura"],
 .real-map-pin[data-category*="musica"],
 .real-map-pin[data-category*="taller"] {
-  --pin-color: #7c3aed;
+  --pin-color: #1b2b24;
 }
 
 .real-map-pin[data-category*="tienda"],
@@ -249,13 +250,13 @@ p {
 
 .real-map-pin[data-category*="hotel"],
 .real-map-pin[data-category*="turismo"] {
-  --pin-color: #0f766e;
+  --pin-color: #225e49;
 }
 
 .real-map-pin[data-category*="salud"],
 .real-map-pin[data-category*="fitness"],
 .real-map-pin[data-category*="belleza"] {
-  --pin-color: #db2777;
+  --pin-color: #c4492c;
 }
 
 .real-map-pin[data-events="event"] {
@@ -276,7 +277,7 @@ p {
   place-items: center;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.18);
-  font-size: 0.68rem;
+  font-size: var(--fs-comment);
   line-height: 1;
   transform: rotate(45deg);
 }
@@ -292,7 +293,7 @@ p {
   background: #fff;
   box-shadow: 0 8px 18px rgba(23, 32, 42, 0.16);
   content: attr(data-score);
-  font-size: 0.62rem;
+  font-size: var(--fs-comment);
   transform: rotate(45deg);
 }
 
@@ -310,7 +311,7 @@ p {
 /* Formularios, tarjetas y estados compartidos por las pantallas públicas. */
 .panel-header h1 {
   margin: 14px 0;
-  font-size: clamp(2.1rem, 5vw, 3.8rem);
+  font-size: var(--fs-display);
   line-height: 0.96;
   letter-spacing: 0;
 }
@@ -325,11 +326,12 @@ p {
 .eyebrow {
   display: inline-flex;
   width: fit-content;
-  padding: 7px 10px;
-  border-radius: 6px;
-  color: #fff;
-  background: var(--green);
-  font-size: 0.76rem;
+  padding: 0;
+  color: var(--red);
+  background: none;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: var(--fs-info);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -344,7 +346,7 @@ label {
   display: grid;
   gap: 7px;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: var(--fs-info);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -398,7 +400,7 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.7);
   background: var(--panel);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
+  
 }
 
 .auth-card p {
@@ -419,7 +421,7 @@ textarea {
 
 .featured-card__top span {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-info);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -428,7 +430,7 @@ textarea {
 .section-title h2,
 .form-panel h2 {
   margin-bottom: 12px;
-  font-size: 1.8rem;
+  font-size: var(--fs-title);
   letter-spacing: 0;
 }
 
@@ -440,7 +442,7 @@ textarea {
   border-radius: 8px;
   color: #fff;
   background: var(--blue);
-  font-size: 1.45rem;
+  font-size: var(--fs-subtitle);
 }
 
 .meta-row,
@@ -459,7 +461,7 @@ textarea {
   padding: 7px 10px;
   color: var(--muted);
   background: rgba(255, 255, 255, 0.64);
-  font-size: 0.82rem;
+  font-size: var(--fs-info);
   font-style: normal;
   font-weight: 800;
 }
@@ -613,7 +615,7 @@ textarea {
 .architecture-band {
   /* Esta sección explica la arquitectura dentro de la demo, no es navegación. */
   padding: 48px 32px 64px;
-  color: #edf4ff;
+  color: #eef3ee;
   background: #151515;
 }
 
@@ -631,7 +633,7 @@ textarea {
 
 .architecture-header h2 {
   margin-bottom: 0;
-  font-size: clamp(1.8rem, 3vw, 3rem);
+  font-size: var(--fs-display);
   line-height: 1.05;
 }
 
@@ -661,7 +663,7 @@ textarea {
 .architecture-layer h3 {
   margin-bottom: 12px;
   text-align: center;
-  font-size: 1rem;
+  font-size: var(--fs-body);
 }
 
 .architecture-layer > div {
@@ -690,9 +692,9 @@ textarea {
   opacity: 0.78;
 }
 
-.architecture-layer--purple { color: #c9c3ff; background: #3d348b; }
+.architecture-layer--purple { color: #dbe9b5; background: #1b2b24; }
 .architecture-layer--green { color: #99ead1; background: #045d49; }
-.architecture-layer--blue { color: #b8d9ff; background: #0d4d86; }
+.architecture-layer--blue { color: #dbe9b5; background: #2f5d8a; }
 .architecture-layer--amber { color: #ffd17c; background: #704300; }
 .architecture-layer--red { color: #ffc1b4; background: #7d2d17; }
 
@@ -718,32 +720,17 @@ textarea {
   place-items: center;
   overflow: hidden;
   padding: 24px;
-  background: #17202a;
+  background: #f2efe9;
 }
 
 .auth-preview {
   position: absolute;
   inset: 0;
-  opacity: 0.86;
-}
-
-.auth-preview::after {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(23, 32, 42, 0.92), rgba(23, 32, 42, 0.42)),
-    linear-gradient(180deg, rgba(31, 138, 112, 0.22), rgba(221, 94, 66, 0.18));
-  content: "";
 }
 
 .auth-preview__map {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(30deg, transparent 0 47%, rgba(38, 103, 255, 0.25) 48% 50%, transparent 51%),
-    linear-gradient(125deg, transparent 0 42%, rgba(31, 138, 112, 0.24) 43% 45%, transparent 46%),
-    linear-gradient(80deg, transparent 0 55%, rgba(245, 184, 65, 0.24) 56% 58%, transparent 59%),
-    #dfe7dc;
 }
 
 .auth-preview__panel {
@@ -754,74 +741,58 @@ textarea {
   display: grid;
   gap: 4px;
   max-width: 340px;
-  border: 1px solid rgba(255, 255, 255, 0.36);
+  border: 1px solid #d9ddd7;
   border-radius: 8px;
-  padding: 18px 20px;
-  color: #fff;
-  background: rgba(23, 32, 42, 0.58);
-  backdrop-filter: blur(18px);
+  padding: 16px 20px;
+  color: var(--ink);
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
 }
 
 .auth-preview__panel strong {
-  font-size: 1.55rem;
+  font-size: var(--fs-subtitle);
 }
 
 .auth-preview__panel span {
-  color: rgba(255, 255, 255, 0.76);
+  color: var(--muted);
 }
 
 .preview-pin {
-  position: absolute;
-  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.preview-pin span {
   display: grid;
-  width: 54px;
-  height: 54px;
+  min-width: 42px;
+  height: 30px;
   place-items: center;
-  border: 4px solid #fff;
-  border-radius: 50% 50% 50% 10px;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  padding: 0 8px;
   color: #fff;
-  background: var(--red);
-  box-shadow: 0 18px 28px rgba(23, 32, 42, 0.24);
-  font-weight: 900;
-  transform: rotate(-45deg);
-}
-
-.preview-pin {
-  font-size: 0;
-}
-
-.preview-pin::before {
-  font-size: 0.95rem;
-  transform: rotate(45deg);
-}
-
-.preview-pin--one {
-  left: 28%;
-  top: 28%;
-}
-
-.preview-pin--one::before {
-  content: "4.8";
-}
-
-.preview-pin--two {
-  top: 55%;
-  right: 22%;
   background: var(--green);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 700;
 }
 
-.preview-pin--two::before {
-  content: "4.6";
+.preview-pin::after {
+  margin-top: -2px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid var(--green);
+  content: "";
 }
 
-.preview-pin--three {
-  top: 36%;
-  right: 38%;
-  background: var(--blue);
+.preview-pin--coral span {
+  background: var(--red);
 }
 
-.preview-pin--three::before {
-  content: "4.9";
+.preview-pin--coral::after {
+  border-top-color: var(--red);
 }
 
 .auth-container {
@@ -833,9 +804,8 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 8px;
   padding: 30px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(22px);
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
 }
 
 .auth-header {
@@ -846,7 +816,7 @@ textarea {
 
 .auth-header h1 {
   margin-bottom: 0;
-  font-size: 2.4rem;
+  font-size: var(--fs-display);
 }
 
 .auth-header p,
@@ -880,7 +850,7 @@ textarea {
 .auth-info h3 {
   margin-bottom: 10px;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: var(--fs-info);
   text-transform: uppercase;
 }
 
@@ -937,7 +907,7 @@ textarea {
 
 .admin-hero h1 {
   margin: 14px 0 10px;
-  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-size: var(--fs-display);
   line-height: 1;
 }
 
@@ -985,12 +955,12 @@ textarea {
 }
 
 .admin-metric strong {
-  font-size: 2rem;
+  font-size: var(--fs-title);
 }
 
 .admin-metric span {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: var(--fs-info);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -1008,7 +978,7 @@ textarea {
 
 .report-filter-panel h2 {
   margin: 10px 0 6px;
-  font-size: 1.45rem;
+  font-size: var(--fs-title);
 }
 
 .report-filter-panel p {
@@ -1039,7 +1009,7 @@ textarea {
 
 .chart-header h2 {
   margin-bottom: 6px;
-  font-size: 1.45rem;
+  font-size: var(--fs-title);
 }
 
 .chart-header p {
@@ -1082,7 +1052,7 @@ textarea {
 
 .bar-group strong {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: var(--fs-info);
   text-align: center;
 }
 
@@ -1103,7 +1073,7 @@ textarea {
   padding: 3px 6px 3px 5px;
   color: var(--ink);
   background: rgba(255, 255, 255, 0.7);
-  font-size: 0.72rem;
+  font-size: var(--fs-info);
   font-weight: 900;
 }
 
@@ -1111,7 +1081,7 @@ textarea {
   min-width: 24px;
   overflow: hidden;
   color: var(--muted);
-  font-size: 0.62rem;
+  font-size: var(--fs-comment);
   font-style: normal;
   text-transform: uppercase;
 }
@@ -1172,7 +1142,7 @@ textarea {
   align-items: center;
   gap: 6px;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: var(--fs-info);
   font-weight: 800;
 }
 
@@ -1204,7 +1174,7 @@ textarea {
 .distribution-row span,
 .distribution-row em {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: var(--fs-info);
   font-style: normal;
 }
 
@@ -1236,14 +1206,14 @@ textarea {
 }
 
 .health-ring strong {
-  font-size: 2.6rem;
+  font-size: var(--fs-display);
   line-height: 1;
 }
 
 .health-ring span {
   margin-top: -36px;
   color: var(--muted);
-  font-size: 0.84rem;
+  font-size: var(--fs-info);
   font-weight: 900;
 }
 
@@ -1268,7 +1238,7 @@ textarea {
 .service-row span,
 .resource-row span {
   color: var(--muted);
-  font-size: 0.84rem;
+  font-size: var(--fs-info);
   font-weight: 800;
 }
 
@@ -1278,7 +1248,7 @@ textarea {
   padding: 6px 9px;
   color: #fff;
   background: var(--red);
-  font-size: 0.78rem;
+  font-size: var(--fs-info);
   text-transform: uppercase;
 }
 
@@ -1312,7 +1282,7 @@ textarea {
 
 .admin-card__main h2 {
   margin: 10px 0;
-  font-size: 1.65rem;
+  font-size: var(--fs-title);
 }
 
 .admin-card__main p {
@@ -1342,7 +1312,7 @@ textarea {
   padding: 7px 10px;
   color: var(--muted);
   background: rgba(255, 255, 255, 0.64);
-  font-size: 0.82rem;
+  font-size: var(--fs-info);
   font-weight: 800;
 }
 
@@ -1383,7 +1353,7 @@ textarea {
 .geo-preview span,
 .geo-preview em {
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: var(--fs-body);
   font-style: normal;
 }
 

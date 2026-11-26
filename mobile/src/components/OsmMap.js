@@ -70,10 +70,10 @@ const MAP_HTML = `<!doctype html>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html,body,#map{height:100%;width:100%;margin:0;background:#e2e8e2}
-    .leaflet-control-attribution{font:9px system-ui,sans-serif}
-    .leaflet-tooltip{border:0;border-radius:10px;padding:7px 10px;box-shadow:0 5px 14px #17282033;font:700 11px system-ui,sans-serif;color:#19241f}
-    .leaflet-control-zoom{border:0!important;box-shadow:0 7px 18px #1728202b!important}
+    html,body,#map{height:100%;width:100%;margin:0;background:#f2efe9}
+    .leaflet-control-attribution{font:9px 'Times New Roman',Times,serif}
+    .leaflet-tooltip{border:0;border-radius:6px;padding:6px 9px;box-shadow:0 1px 4px #00000040;font:700 12px 'Times New Roman',Times,serif;color:#19241f}
+    .leaflet-control-zoom{border:0!important;box-shadow:0 1px 4px #00000033!important}
     .leaflet-control-zoom a{border:0!important;color:#225e49!important}
   </style>
 </head>
@@ -92,9 +92,11 @@ const MAP_HTML = `<!doctype html>
       }
 
       const map = L.map('map', { zoomControl: true, attributionControl: true }).setView([4.6486, -74.0721], 11);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
+      // Mismo mapa base que la web (CARTO Voyager sobre OpenStreetMap).
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd',
+        maxZoom: 20,
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
       }).addTo(map);
       const markers = L.layerGroup().addTo(map);
 
@@ -106,7 +108,7 @@ const MAP_HTML = `<!doctype html>
             radius: active ? 10 : 8,
             color: '#ffffff',
             weight: 3,
-            fillColor: active ? '#e25f3f' : '#225e49',
+            fillColor: active ? '#c4492c' : '#225e49',
             fillOpacity: 1
           }).addTo(markers)
             .bindTooltip(site.name, { direction: 'top', offset: [0, -8] })
@@ -116,7 +118,7 @@ const MAP_HTML = `<!doctype html>
 
         if (data.location) {
           L.circleMarker([data.location.lat, data.location.lng], {
-            radius: 11, color: '#ffffff', weight: 3, fillColor: '#e25f3f', fillOpacity: 1
+            radius: 11, color: '#ffffff', weight: 3, fillColor: '#c4492c', fillOpacity: 1
           }).addTo(markers).bindTooltip(data.location.address, { direction: 'top', offset: [0, -9] });
           map.flyTo([data.location.lat, data.location.lng], 16, { animate: true, duration: .65 });
         } else if (data.selectedId) {
@@ -132,9 +134,9 @@ const MAP_HTML = `<!doctype html>
 </html>`;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#e2e8e2' },
-  webView: { flex: 1, backgroundColor: '#e2e8e2' },
-  loading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#e2e8e2' },
+  container: { flex: 1, backgroundColor: '#f2efe9' },
+  webView: { flex: 1, backgroundColor: '#f2efe9' },
+  loading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f2efe9' },
   loadingText: { color: colors.green, fontSize: 12, fontWeight: '800' },
   error: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 5, padding: 24, backgroundColor: '#edf0eb' },
   errorTitle: { color: colors.ink, fontWeight: '900' },

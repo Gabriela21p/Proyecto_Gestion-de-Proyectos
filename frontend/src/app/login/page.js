@@ -1,8 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import { BASEMAP_STYLE } from '@/lib/basemap';
+
+// Lugares de muestra que se ven detrás del formulario. Son coordenadas reales
+// de Bogotá para que el fondo sea un mapa de verdad y no una ilustración.
+const PREVIEW_PINS = [
+  { lngLat: [-74.1290, 4.6420], label: '4.6', tone: 'green' },
+  { lngLat: [-74.1150, 4.6950], label: '4.2', tone: 'green' },
+  { lngLat: [-74.0484, 4.6767], label: '4.4', tone: 'green' },
+  { lngLat: [-74.0320, 4.6300], label: '4.8', tone: 'coral' },
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,13 +57,9 @@ export default function LoginPage() {
   return (
     <main className="auth-page">
       <div className="auth-preview" aria-hidden="true">
-        <div className="auth-preview__map">
-          <span className="preview-pin preview-pin--one">4.8</span>
-          <span className="preview-pin preview-pin--two">4.6</span>
-          <span className="preview-pin preview-pin--three">4.9</span>
-        </div>
+        <PreviewMap />
         <div className="auth-preview__panel">
-          <strong>Chapinero</strong>
+          <strong>Bogotá</strong>
           <span>5 sitios destacados · 2 eventos activos</span>
         </div>
       </div>
@@ -138,4 +144,38 @@ export default function LoginPage() {
       </section>
     </main>
   );
+}
+
+// Mapa decorativo y sin interacción: sólo ambienta la pantalla de acceso.
+function PreviewMap() {
+  const node = useRef(null);
+
+  useEffect(() => {
+    let map;
+    let cancelled = false;
+    (async () => {
+      const maplibregl = (await import('maplibre-gl')).default;
+      if (cancelled || !node.current) return;
+      map = new maplibregl.Map({
+        container: node.current,
+        style: BASEMAP_STYLE,
+        center: [-74.0800, 4.6600],
+        zoom: 12.7,
+        interactive: false,
+        attributionControl: { compact: true }
+      });
+      PREVIEW_PINS.forEach((pin) => {
+        const element = document.createElement('div');
+        element.className = `preview-pin preview-pin--${pin.tone}`;
+        element.innerHTML = `<span>${pin.label}</span>`;
+        new maplibregl.Marker({ element, anchor: 'bottom' }).setLngLat(pin.lngLat).addTo(map);
+      });
+    })();
+    return () => {
+      cancelled = true;
+      map?.remove();
+    };
+  }, []);
+
+  return <div ref={node} className="auth-preview__map" />;
 }

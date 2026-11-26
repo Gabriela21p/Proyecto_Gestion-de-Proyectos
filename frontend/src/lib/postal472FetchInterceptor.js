@@ -70,7 +70,9 @@ export function installPostal472FetchInterceptor() {
 
 function shouldResolveFromDevice(payload) {
   if (!payload?.direccion) return false;
-  if (Number.isFinite(Number(payload.latitud)) && Number.isFinite(Number(payload.longitud))) return false;
+  // Number('') vale 0, así que una coordenada vacía no cuenta como resuelta.
+  const hasCoords = [payload.latitud, payload.longitud].every((value) => value !== '' && value !== null && value !== undefined && Number.isFinite(Number(value)));
+  if (hasCoords) return false;
 
   const city = normalize(payload.ciudad || 'Bogota');
   return !city || city.includes('bogota');

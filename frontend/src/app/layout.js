@@ -1,6 +1,12 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './globals.css';
 import './product-theme.css';
+// Fuente de los títulos empaquetada con la app: funciona aunque no haya
+// conexión a Google Fonts (por ejemplo, en la red de la universidad).
+import '@fontsource/playfair-display/500.css';
+import '@fontsource/playfair-display/600.css';
+import '@fontsource/playfair-display/700.css';
+import './typography.css';
 import { AuthProvider } from '@/lib/AuthContext';
 
 export const metadata = {

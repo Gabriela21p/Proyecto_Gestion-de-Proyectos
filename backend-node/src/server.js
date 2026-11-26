@@ -101,6 +101,13 @@ const reviewSchema = z.object({
   verificada: z.boolean().optional()
 });
 
+// Acepta la coordenada como número o como texto numérico ("4.65"); un valor
+// vacío se trata como "sin coordenada" para que la dirección se resuelva.
+const optionalCoordinate = z.preprocess(
+  (value) => (value === '' || value === null ? undefined : typeof value === 'string' ? Number(value) : value),
+  z.number({ invalid_type_error: 'La coordenada debe ser un número.' }).finite().optional()
+);
+
 const suggestionSchema = z.object({
   nombre: z.string().min(3).max(120),
   categoria: z.string().max(60).optional(),
@@ -110,8 +117,8 @@ const suggestionSchema = z.object({
   descripcion: z.string().min(10).max(1200),
   contacto: z.string().max(120).optional(),
   suggested_by: z.string().max(120).optional(),
-  latitud: z.number().optional(),
-  longitud: z.number().optional()
+  latitud: optionalCoordinate,
+  longitud: optionalCoordinate
 });
 
 const authSchema = z.object({

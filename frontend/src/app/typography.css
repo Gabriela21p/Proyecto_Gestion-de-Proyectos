@@ -1,0 +1,59 @@
+/* Tipografía única de Rolling.
+   - Títulos: Playfair Display (con Georgia como respaldo si no carga).
+   - Todo lo demás: Times New Roman.
+   Los tamaños salen de esta escala para que cada tipo de texto se vea igual en
+   todas las pantallas; en el resto del CSS sólo se usan estas variables. */
+:root {
+  --font-title: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-body: "Times New Roman", Times, serif;
+
+  --fs-display: clamp(2.25rem, 3.6vw, 3.25rem); /* título principal de cada pantalla */
+  --fs-title: 1.75rem;     /* títulos de sección */
+  --fs-subtitle: 1.3rem;   /* subtítulos, nombres de lugares, tarjetas */
+  --fs-body: 1.0625rem;    /* texto de lectura */
+  --fs-info: 0.95rem;      /* información: botones, campos, datos, filtros */
+  --fs-comment: 0.85rem;   /* comentarios, notas y etiquetas pequeñas */
+}
+
+html,
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+}
+
+body {
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea,
+.maplibregl-ctrl-attrib {
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-title);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: var(--fs-display); line-height: 1.08; }
+h2 { font-size: var(--fs-title); line-height: 1.15; }
+h3 { font-size: var(--fs-subtitle); line-height: 1.2; }
+
+/* Elementos que funcionan como títulos aunque no sean h1–h6. */
+.auth-preview__panel strong,
+.session-gate__panel strong,
+.featured-card__top strong,
+.map-brand strong {
+  font-family: var(--font-title);
+  font-weight: 600;
+}
